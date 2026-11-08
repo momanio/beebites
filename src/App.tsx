@@ -37,7 +37,13 @@ function App() {
           </aside>
         )}
         <main id="main">
-          <Hero settings={settings} products={products} loading={loading} />
+          <Hero
+            settings={settings}
+            products={products}
+            loading={loading}
+            quantities={cart.quantities}
+            onQuantityChange={cart.changeQuantity}
+          />
           <section
             id="menu"
             className="menu-section section-space"

@@ -8,10 +8,14 @@ export function Hero({
   settings,
   products,
   loading,
+  quantities,
+  onQuantityChange,
 }: {
   settings: SiteSettings
   products: Product[]
   loading: boolean
+  quantities: Record<string, number>
+  onQuantityChange: (id: string, change: number) => void
 }) {
   return (
     <section id="home" className="hero-section" aria-labelledby="hero-title">
@@ -51,7 +55,12 @@ export function Hero({
             <span>صُنع بحب في الأردن</span>
           </div>
         </div>
-        <HeroProducts products={products} loading={loading} />
+        <HeroProducts
+          products={products}
+          loading={loading}
+          quantities={quantities}
+          onQuantityChange={onQuantityChange}
+        />
       </div>
       <div className="hero-bottom-line" aria-hidden="true">
         <span />

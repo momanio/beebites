@@ -69,7 +69,7 @@ The import contains two categories, 13 products and the `siteSettings` singleton
 - Product images support hotspot cropping and are requested from Sanity at 320/640px with automatic image format. Upload the original logo without redesigning it.
 - Existing site settings are still read from `siteSettings`, with local defaults for missing values. Settings and category management are hidden from Studio's product workflow.
 - **ليش بي بايتس؟** is static. Edit its three cards in `src/data/about.ts`; CMS About card edits are ignored by the website.
-- The hero previews up to three orderable products from the same published menu. Uploaded photos take priority, with both حلو and مالح represented when photos are available. Clicking a preview jumps to that product's quantity controls in the menu. Hidden and coming-soon products are excluded; missing photos use the labeled placeholder.
+- The hero carousel shuffles orderable products once per visit, with uploaded photos first. It keeps that order while Sanity refreshes, rotates every 5.5 seconds while visible, and pauses on hover, keyboard focus, or when the tab is hidden. Reduced-motion preferences disable automatic rotation. Visitors can swipe, use arrows or keyboard navigation, view a product in the menu, or add it directly to their box. Hidden and coming-soon products are excluded; missing photos use the labeled placeholder. Empty and single-product menus work without carousel controls.
 
 The local development site reads published content through Vite's `/api/sanity` proxy, bypassing browser CORS and CDN caching. It checks for menu changes every five seconds while visible and when you return to the tab. Restart `npm run dev` after changing Vite configuration. Production builds read through Sanity's CDN and refresh when you return to the tab; their origins still need Sanity CORS access.
 
@@ -133,7 +133,7 @@ npx playwright install chromium
 npm run test:browser
 ```
 
-The browser suite starts its own local server on port 4175 and mocks Sanity. It covers loading/fallback, CMS updates, uploaded photos served from Sanity's asset CDN even when data uses the local proxy, cart persistence/reconciliation, dialog focus, navigation, RTL/LTR positioning, reduced motion, blocked storage and responsive widths. Screenshots go to ignored `test-results/`. It requires an environment that permits a local listening socket and Chromium subprocesses.
+The browser suite starts its own local server on port 4175 and mocks Sanity. It covers loading/fallback, CMS updates, uploaded photos served from Sanity's asset CDN even when data uses the local proxy, carousel navigation and rotation/pause, direct hero ordering, empty/single-product menus, cart persistence/reconciliation, dialog focus, navigation, RTL/LTR positioning, reduced motion, mobile touch, blocked storage and responsive widths. Screenshots go to ignored `test-results/`. It requires an environment that permits a local listening socket and Chromium subprocesses.
 
 ## Deploy
 

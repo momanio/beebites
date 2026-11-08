@@ -9,23 +9,37 @@ const photo: SanityImage = {
   asset: { _type: 'reference', _ref: 'image-example-640x640-jpg' },
 }
 
-test('hero uses photos first and showcases both categories when photos exist', () => {
+test('carousel includes every orderable product, with uploaded photos first', () => {
   const products: Product[] = [
     fallbackMenu.products[0],
     { ...fallbackMenu.products[1], image: photo },
     { ...fallbackMenu.products[2], image: photo },
-    { ...fallbackMenu.products[3], image: photo },
     { ...fallbackMenu.products[10], image: photo },
   ]
-  const featured = getFeaturedProducts(products)
-  assert.equal(featured.length, 3)
-  assert.equal(featured[0]._id, products[1]._id)
-  assert.ok(featured.every((product) => product.image))
+  const featured = getFeaturedProducts(products, 42)
+  assert.equal(featured.length, products.length)
+  assert.ok(featured.slice(0, 3).every((product) => product.image))
+  assert.equal(featured[3], products[0])
   assert.deepEqual(
     new Set(featured.map((product) => product.categoryId)),
     new Set(['category-sweet', 'category-savory']),
   )
   assert.equal(products[0], fallbackMenu.products[0])
+})
+
+test('a visit keeps its shuffled order across CMS refreshes and source reordering', () => {
+  const originalIds = fallbackMenu.products.map((product) => product._id)
+  const first = getFeaturedProducts(fallbackMenu.products, 42)
+  assert.deepEqual(
+    getFeaturedProducts([...fallbackMenu.products].reverse(), 42),
+    first,
+  )
+  assert.notDeepEqual(getFeaturedProducts(fallbackMenu.products, 12345), first)
+  assert.deepEqual(
+    fallbackMenu.products.map((product) => product._id),
+    originalIds,
+  )
+  assert.equal(new Set(first.map((product) => product._id)).size, first.length)
 })
 
 test('hidden and coming-soon products cannot be promoted in the hero', () => {
@@ -37,11 +51,22 @@ test('hidden and coming-soon products cannot be promoted in the hero', () => {
   assert.deepEqual(getFeaturedProducts(products), [products[2]])
 })
 
-test('hero supports empty menus, a single product and products without photos', () => {
+test('carousel supports empty menus, a single product and products without photos', () => {
   assert.deepEqual(getFeaturedProducts([]), [])
-  assert.deepEqual(getFeaturedProducts([fallbackMenu.products[0]]), [fallbackMenu.products[0]])
-  const featured = getFeaturedProducts(fallbackMenu.products)
-  assert.equal(featured.length, 3)
-  assert.equal(new Set(featured.map((product) => product._id)).size, 3)
-  assert.equal(featured[0], fallbackMenu.products[0])
+  assert.deepEqual(getFeaturedProducts([fallbackMenu.products[0]]), [
+    fallbackMenu.products[0],
+  ])
+  const eligible = fallbackMenu.products.filter(
+    (product) => product.available && !product.comingSoon,
+  )
+  assert.equal(
+    getFeaturedProducts(fallbackMenu.products).length,
+    eligible.length,
+  )
+  assert.deepEqual(
+    new Set(
+      getFeaturedProducts(fallbackMenu.products).map((product) => product._id),
+    ),
+    new Set(eligible.map((product) => product._id)),
+  )
 })
