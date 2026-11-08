@@ -309,6 +309,9 @@ try {
     .waitFor({ state: 'detached' })
 
   // Categories published in Studio appear without a frontend deployment.
+  const newArrivals = menu.categories.find(({ _id }) => _id === 'category-new')
+  const previousNewArrivalsOrder = newArrivals.order
+  newArrivals.order = 99
   menu.categories.push(
     {
       _id: 'custom-category',
@@ -341,6 +344,17 @@ try {
     1,
   )
   assert.ok((await page.locator('.category-nav').innerText()).includes('كيك'))
+  assert.deepEqual(
+    await page.locator('.category-nav .category-chip').allTextContents(),
+    ['جديدنا', 'الخلايا', 'كيك'],
+    'New arrivals stays first in navigation regardless of its saved order',
+  )
+  assert.deepEqual(
+    await page.locator('.menu-content > .category-section > .section-title-wrap h2').allTextContents(),
+    ['جديدنا', 'الخلايا', 'كيك'],
+    'Category sections follow the same order as navigation',
+  )
+  newArrivals.order = previousNewArrivalsOrder
   menu.categories.splice(-2)
   menu.products.pop()
   await page

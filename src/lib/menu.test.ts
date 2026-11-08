@@ -36,6 +36,48 @@ test('storefront reads arbitrary categories and keeps subcategories under their 
   )
 })
 
+test('جديدنا stays first regardless of display order, including reused category IDs', () => {
+  for (const identity of [
+    { _id: 'category-new', slug: 'renamed-new' },
+    { _id: 'existing-new-arrivals', slug: 'new' },
+  ]) {
+    const menu = resolveMenu({
+      categories: [
+        {
+          _id: 'refreshments',
+          title: 'المرطبات',
+          slug: 'refreshments',
+          order: 0,
+        },
+        ...fallbackMenu.categories.map((category) =>
+          category._id === 'category-new'
+            ? { ...category, ...identity, order: 99 }
+            : category,
+        ),
+      ],
+      products: [],
+    })
+    assert.deepEqual(
+      rootCategories(menu.categories).map((category) => category.title),
+      ['جديدنا', 'المرطبات', 'الخلايا'],
+    )
+  }
+})
+
+test('المرطبات appears after existing main categories when assigned the last display order', () => {
+  const menu = resolveMenu({
+    categories: [
+      { _id: 'refreshments', title: 'المرطبات', slug: 'refreshments', order: 3 },
+      ...fallbackMenu.categories,
+    ],
+    products: [],
+  })
+  assert.deepEqual(
+    rootCategories(menu.categories).map((category) => category.title),
+    ['جديدنا', 'الخلايا', 'المرطبات'],
+  )
+})
+
 test('legacy products get only the missing categories they still need', () => {
   const menu = resolveMenu({
     categories: [],

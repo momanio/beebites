@@ -65,8 +65,17 @@ export const category = defineType({
       name: 'order',
       title: 'ترتيب العرض',
       type: 'number',
-      initialValue: 1,
-      description: 'الأرقام الأصغر تظهر أولاً.',
+      initialValue: async (_, context) => {
+        const client = context
+          .getClient({ apiVersion: '2026-01-01' })
+          .withConfig({ perspective: 'raw', useCdn: false })
+        const lastOrder = await client.fetch<number | null>(
+          '*[_type == "category" && defined(order)] | order(order desc)[0].order',
+        )
+        return (lastOrder ?? 0) + 1
+      },
+      description:
+        'يُضاف القسم الجديد في النهاية تلقائياً. يمكنك تغيير الترتيب؛ الأرقام الأصغر تظهر أولاً.',
       validation: (rule) => rule.required().integer().min(0),
     }),
   ],

@@ -74,7 +74,7 @@ The migration creates missing default categories, reuses existing sweet/savory c
 
 ## Editing content
 
-- **إدارة الأقسام:** create, rename and order categories in Studio. Leave **القسم الرئيسي** blank for a main category such as **جديدنا**. Select **الخلايا** to create a subcategory beneath it. The hierarchy supports main categories and one level of subcategories; validation prevents self-references and deeper nesting. Publish a main category before its subcategories.
+- **إدارة الأقسام:** create, rename and order categories in Studio. **جديدنا** always appears first on the website. New categories start with a display order after all existing categories, including drafts, so they appear last by default. Change **ترتيب العرض** to move other categories; lower numbers appear first. Existing categories keep their saved order until edited and published. Leave **القسم الرئيسي** blank for a main category such as **جديدنا**. Select **الخلايا** to create a subcategory beneath it. The hierarchy supports main categories and one level of subcategories; validation prevents self-references and deeper nesting. Publish a main category before its subcategories.
 - **المنتجات حسب الأقسام:** browse a main category's products or open its subcategories. Products created from a category's list have **القسم** selected automatically. **كل المنتجات** shows the full menu. You can also create categories directly from a product's category picker, then publish the category before publishing the product.
 - The website reads category documents from Sanity. New published categories appear automatically without a frontend deployment. The main navigation shows top-level categories; subcategory links and products appear beneath their parent. A product can be assigned directly to **جديدنا**, another main category, or a subcategory.
 - Edit names, subtitles, prices, photos, descriptions and badges. Keep **إظهار المنتج في الموقع** enabled and click **Publish** to show the product. Drafts do not appear. `comingSoon` keeps a published product visible with ordering disabled.
@@ -171,7 +171,7 @@ cd studio
 npm run deploy
 ```
 
-This invokes `sanity deploy`. Choose an available Studio hostname when prompted, then register/verify its CORS origin with credentials. Studio deployment and frontend deployment are separate. No live Sanity project, dataset or deployment was created by this implementation.
+This invokes `sanity deploy` and updates the existing BeeBites Studio at `https://beebites.sanity.studio`, selected by `deployment.appId` in `studio/sanity.cli.ts`. The Sanity Dashboard opens the same hosted deployment. Redeploy Studio after changing its schemas or initial values, then reload the editor to use the updated code. Studio deployment and frontend deployment are separate; publishing content does not deploy Studio code.
 
 The static `og:image` in `index.html` points to the original logo at the production storefront URL so social crawlers can fetch it without JavaScript. Update this absolute URL if the production domain changes. The browser also updates that tag to the CMS logo and requests a small favicon from Sanity. The page includes Arabic metadata, dynamic Bakery JSON-LD and the exact dynamic copyright line.
 
