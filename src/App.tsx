@@ -4,7 +4,6 @@ import { CartBar } from './components/CartBar'
 import { Footer } from './components/Footer'
 import { Header } from './components/Header'
 import { Hero } from './components/Hero'
-import { HighlightRibbon } from './components/HighlightRibbon'
 import { HowToOrder } from './components/HowToOrder'
 import { Icon } from './components/Icon'
 import { MenuSection, MenuSkeleton } from './components/MenuSection'
@@ -39,7 +38,6 @@ function App() {
         )}
         <main id="main">
           <Hero settings={settings} products={products} loading={loading} />
-          <HighlightRibbon settings={settings} />
           <section
             id="menu"
             className="menu-section section-space"

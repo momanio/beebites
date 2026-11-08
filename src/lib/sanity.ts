@@ -12,6 +12,11 @@ const isConfigured = Boolean(
   /^[a-z0-9_-]+$/.test(dataset),
 )
 
+if (import.meta.env.DEV && !isConfigured)
+  console.warn(
+    '[BeeBites] Sanity is not configured. The sample menu will be shown. Set VITE_SANITY_PROJECT_ID and VITE_SANITY_DATASET in the root .env file, then restart Vite.',
+  )
+
 export const sanityClient = isConfigured
   ? createClient({
       projectId,
@@ -31,7 +36,10 @@ export const sanityClient = isConfigured
     })
   : null
 
-const imageBuilder = sanityClient ? createImageUrlBuilder(sanityClient) : null
+// Images always come from Sanity's asset CDN, not the local data API proxy.
+const imageBuilder = isConfigured
+  ? createImageUrlBuilder({ projectId: projectId!, dataset: dataset! })
+  : null
 
 export function imageUrl(
   image: SanityImage | null | undefined,

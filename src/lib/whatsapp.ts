@@ -8,15 +8,13 @@ export function whatsappUrl(number: string, message: string): string | null {
   return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`
 }
 
-export function buildOrderMessage(lines: CartLine[], greeting: string): string {
+export function buildOrderMessage(lines: CartLine[]): string {
   const total = roundMoney(lines.reduce((sum, line) => sum + line.lineTotal, 0))
   const items = lines.map(
     ({ product, quantity, lineTotal }) =>
       `• ${product.name}${product.subtitle ? ` ${product.subtitle}` : ''}\n  ${quantity} × ${formatPrice(product.price)} = ${formatPrice(lineTotal)}`,
   )
   return [
-    greeting.trim(),
-    '',
     'طلبي من BeeBites 🐝',
     ...items,
     '',

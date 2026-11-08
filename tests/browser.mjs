@@ -56,14 +56,30 @@ try {
   await context.route('https://fonts.googleapis.com/**', (route) =>
     route.fulfill({ contentType: 'text/css', body: '' }),
   )
+  await context.route('https://cdn.sanity.io/images/**', (route) =>
+    route.fulfill({
+      contentType: 'image/svg+xml',
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640"><rect width="640" height="640" fill="#f5c542"/></svg>',
+    }),
+  )
   const page = await context.newPage()
   const errors = []
   page.on('pageerror', (error) => errors.push(error.message))
   let failCms = false
   let menu = structuredClone(fallbackMenu)
+  menu.products[0].image = {
+    _type: 'image',
+    asset: {
+      _type: 'reference',
+      _ref: 'image-0123456789abcdef0123456789abcdef01234567-640x640-png',
+    },
+  }
   const settings = {
     ...fallbackSettings,
     whatsappNumber: '962790000000',
+    defaultWhatsappMessage: 'test',
+    highlightTitle: 'test',
+    highlightText: 'testing',
     heroSubline: 'مذاقات من إعدادات الموقع',
     announcement: { enabled: true, text: 'إعلان تجريبي من الاستوديو' },
     aboutCards: [{ _key: 'cms-only', title: 'نص من الاستوديو', text: 'لا يظهر في الموقع' }],
@@ -90,6 +106,24 @@ try {
   assert.equal(await page.locator('html').getAttribute('dir'), 'rtl')
   assert.equal(await page.locator('html').getAttribute('lang'), 'ar')
   assert.equal(await page.locator('.product-card').count(), 13)
+  assert.equal(await page.locator('.highlight-ribbon').count(), 0)
+  // The local data proxy must not become the base URL for uploaded photos.
+  const productImage = page.locator('.product-card').first().locator('img')
+  const productImageUrl = new URL(await productImage.getAttribute('src'))
+  assert.equal(productImageUrl.origin, 'https://cdn.sanity.io')
+  assert.equal(
+    productImageUrl.pathname,
+    '/images/test1234/production/0123456789abcdef0123456789abcdef01234567-640x640.png',
+  )
+  await productImage.scrollIntoViewIfNeeded()
+  await page.waitForFunction(
+    (image) => image.complete && image.naturalWidth > 0,
+    await productImage.elementHandle(),
+  )
+  assert.equal(
+    await page.locator('.product-card').first().locator('.placeholder-caption').count(),
+    0,
+  )
   assert.equal(await page.locator('#home a.hero-product').count(), 3)
   const heroProduct = page.locator('#home a.hero-product').first()
   assert.ok((await heroProduct.innerText()).includes(menu.products[0].name))
@@ -148,6 +182,8 @@ try {
   )
   assert.equal(orderUrl.hostname, 'wa.me')
   assert.equal(orderUrl.pathname, '/962790000000')
+  assert.ok(orderUrl.searchParams.get('text').startsWith('طلبي من BeeBites 🐝\n'))
+  assert.ok(!orderUrl.searchParams.get('text').includes('test'))
   assert.ok(orderUrl.searchParams.get('text').includes('2 × 5.5 JD = 11 JD'))
   assert.ok(orderUrl.searchParams.get('text').includes('المجموع: 17 JD'))
   await page.reload()
@@ -156,6 +192,13 @@ try {
   await page.locator('.cart-summary').click()
   await page.locator('dialog[open]').waitFor()
   assert.equal(await page.locator('.cart-line-list li').count(), 2)
+  const dialogOrderUrl = new URL(
+    await page.locator('.cart-dialog-send').getAttribute('href'),
+  )
+  assert.equal(
+    dialogOrderUrl.searchParams.get('text'),
+    orderUrl.searchParams.get('text'),
+  )
   await page.keyboard.press('Escape')
   assert.equal(await page.locator('dialog[open]').count(), 0)
   assert.ok(
@@ -268,7 +311,7 @@ try {
   await blockedStorage.close()
   assert.deepEqual(errors, [])
   console.log(
-    'Browser checks passed: CMS loading/fallback, dynamic content, cart persistence/reconciliation, WhatsApp message, dialog focus, mobile navigation, RTL/LTR, reduced motion, blocked storage and four viewport sizes.',
+    'Browser checks passed: CMS loading/fallback, Sanity CDN photos, dynamic content, cart persistence/reconciliation, WhatsApp message, dialog focus, mobile navigation, RTL/LTR, reduced motion, blocked storage and four viewport sizes.',
   )
 } finally {
   await browser?.close()

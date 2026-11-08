@@ -80,8 +80,8 @@ test('WhatsApp message includes names, subtitles, quantities, line totals and gr
     { 'product-chocolate-mix': 2, 'product-honey': 1 },
     fallbackMenu.products,
   )
-  const message = buildOrderMessage(lines, 'مرحبا بي بايتس')
-  assert.ok(message.startsWith('مرحبا بي بايتس\n'))
+  const message = buildOrderMessage(lines)
+  assert.ok(message.startsWith('طلبي من BeeBites 🐝\n'))
   assert.ok(message.includes('خلية شوكليت مكس (وايت & عادي)'))
   assert.ok(message.includes('2 × 5.5 JD = 11 JD'))
   assert.ok(message.includes('1 × 6 JD = 6 JD'))

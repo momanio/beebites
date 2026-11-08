@@ -26,7 +26,7 @@ export function CartBar({
 }: CartBarProps) {
   const dialog = useRef<HTMLDialogElement>(null)
   const reducedMotion = useReducedMotion()
-  const orderMessage = buildOrderMessage(lines, settings.defaultWhatsappMessage)
+  const orderMessage = buildOrderMessage(lines)
   const canOrder = Boolean(whatsappUrl(settings.whatsappNumber, orderMessage))
 
   return (

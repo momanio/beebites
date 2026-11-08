@@ -102,6 +102,8 @@ A CORS error or `403 Forbidden` in `useMenu`/`useSiteSettings` means the browser
 
 ### Published products missing from the website
 
+First confirm that the root `.env` exists and contains `VITE_SANITY_PROJECT_ID` and `VITE_SANITY_DATASET`, matching `SANITY_STUDIO_PROJECT_ID` and `SANITY_STUDIO_DATASET` in `studio/.env`. The `.env.example` files are templates; Vite and Studio do not load them automatically. Missing or invalid storefront configuration disables Sanity requests and displays the sample menu, with a warning in the development browser console. Restart the servers after creating or changing their environment files.
+
 Studio uses your Sanity login; the website reads anonymously. Deploying Studio or publishing a product does not grant anonymous access to a private dataset. From `studio/`, enable the intended public menu access:
 
 ```bash
@@ -131,7 +133,7 @@ npx playwright install chromium
 npm run test:browser
 ```
 
-The browser suite starts its own local server on port 4175 and mocks Sanity. It covers loading/fallback, CMS updates, cart persistence/reconciliation, dialog focus, navigation, RTL/LTR positioning, reduced motion, blocked storage and responsive widths. Screenshots go to ignored `test-results/`. It requires an environment that permits a local listening socket and Chromium subprocesses.
+The browser suite starts its own local server on port 4175 and mocks Sanity. It covers loading/fallback, CMS updates, uploaded photos served from Sanity's asset CDN even when data uses the local proxy, cart persistence/reconciliation, dialog focus, navigation, RTL/LTR positioning, reduced motion, blocked storage and responsive widths. Screenshots go to ignored `test-results/`. It requires an environment that permits a local listening socket and Chromium subprocesses.
 
 ## Deploy
 
