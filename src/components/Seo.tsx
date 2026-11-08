@@ -5,13 +5,14 @@ import { safeSocialUrl, whatsappUrl } from '../lib/whatsapp'
 
 export function Seo({ settings }: { settings: SiteSettings }) {
   const logo = imageUrl(settings.logo, 800) || '/logo.jpg'
+  const favicon = imageUrl(settings.logo, 64) || '/logo.jpg'
   useEffect(() => {
     const absoluteLogo = new URL(logo, window.location.origin).href
     document
       .querySelector('meta[property="og:image"]')
       ?.setAttribute('content', absoluteLogo)
-    document.querySelector('link[rel="icon"]')?.setAttribute('href', logo)
-  }, [logo])
+    document.querySelector('link[rel="icon"]')?.setAttribute('href', favicon)
+  }, [logo, favicon])
 
   const schema = {
     '@context': 'https://schema.org',

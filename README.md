@@ -14,7 +14,7 @@ npm run dev
 
 Open `http://localhost:4000`. Development and local production preview both use port 4000 with strict port selection, so stop the other server first if the port is occupied. Local development without Sanity configuration displays the complete 13-product sample menu. When Sanity is configured, a failed initial menu request shows an Arabic retry message and preserves saved carts instead of offering sample products. Retry reloads both the menu and contact settings. If a later refresh fails, the last successful menu remains visible with a notice. Missing product photos use a clearly labeled honeycomb SVG. A successfully fetched empty menu stays empty.
 
-**Add the original logo to `public/logo.jpg`.** That file was absent from the supplied checkout. The app references it without redrawing it, and displays a plain BeeBites wordmark if it is missing. The same file is used for the favicon and default social preview.
+The original logo is included unchanged at `public/logo.jpg`, copied from the logo already uploaded to the BeeBites Sanity project. It provides the initial header/footer logo, favicon fallback and social preview before CMS settings load. Keep this local copy aligned with the original logo when changing branding in Studio.
 
 ## Environment variables
 
@@ -173,7 +173,7 @@ npm run deploy
 
 This invokes `sanity deploy`. Choose an available Studio hostname when prompted, then register/verify its CORS origin with credentials. Studio deployment and frontend deployment are separate. No live Sanity project, dataset or deployment was created by this implementation.
 
-Before sharing publicly, set `og:image` in `index.html` to the absolute deployed logo URL (for example, `https://your-domain.com/logo.jpg`). The browser also updates that tag to the CMS logo, but social crawlers may not execute JavaScript. The page includes Arabic metadata, dynamic Bakery JSON-LD and the exact dynamic copyright line.
+The static `og:image` in `index.html` points to the original logo at the production storefront URL so social crawlers can fetch it without JavaScript. Update this absolute URL if the production domain changes. The browser also updates that tag to the CMS logo and requests a small favicon from Sanity. The page includes Arabic metadata, dynamic Bakery JSON-LD and the exact dynamic copyright line.
 
 ## Project layout
 
@@ -189,7 +189,7 @@ Before sharing publicly, set `og:image` in `index.html` to the absolute deployed
 1. Real Sanity project ID in both environment files; confirm the dataset name.
 2. `9627XXXXXXXX` with the real WhatsApp number in Studio (and the fallback/seed source for offline use).
 3. The 13 labeled photo placeholders with actual product photos in Studio.
-4. Add the missing original `public/logo.jpg`; optionally upload the same original in Studio.
+4. Keep the original `public/logo.jpg` and the logo selected in Studio aligned.
 5. Set the absolute production logo URL in `index.html` for Open Graph sharing.
 6. Review the default order-in-advance note, greeting and social links for your business.
 
