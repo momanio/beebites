@@ -12,7 +12,7 @@ cp .env.example .env
 npm run dev
 ```
 
-Open `http://localhost:4000`. Development and local production preview both use port 4000 with strict port selection, so stop the other server first if the port is occupied. Without Sanity credentials, the site displays the complete 13-product fallback menu. Missing product photos use a clearly labeled honeycomb SVG. Failed CMS requests also fall back silently. A successfully fetched empty menu stays empty.
+Open `http://localhost:4000`. Development and local production preview both use port 4000 with strict port selection, so stop the other server first if the port is occupied. Local development without Sanity configuration displays the complete 13-product sample menu. When Sanity is configured, a failed initial menu request shows an Arabic retry message and preserves saved carts instead of offering sample products. Retry reloads both the menu and contact settings. If a later refresh fails, the last successful menu remains visible with a notice. Missing product photos use a clearly labeled honeycomb SVG. A successfully fetched empty menu stays empty.
 
 **Add the original logo to `public/logo.jpg`.** That file was absent from the supplied checkout. The app references it without redrawing it, and displays a plain BeeBites wordmark if it is missing. The same file is used for the favicon and default social preview.
 
@@ -125,6 +125,8 @@ npx sanity dataset visibility get production
 ```
 
 Refresh `http://localhost:4000`. To check a specific published product, open `/api/sanity/v2026-01-01/data/doc/production/PRODUCT_ID` on that local origin. A response containing `"omitted":[{"id":"...","reason":"permission"}]` confirms that Sanity denied the anonymous read, even if the response status is 200. Once access is fixed, `documents` contains the product. Opening the remote API directly while signed in can use your Sanity session, so it does not prove that anonymous reads are allowed.
+
+Dependency overrides pin patched transitive packages used by ESLint and Sanity Studio: minimatch, adm-zip, js-yaml and typeid-js's uuid dependency. Keep both lockfiles updated when changing these pins, and verify Studio as well as the storefront after dependency updates.
 
 ## Build and verify
 

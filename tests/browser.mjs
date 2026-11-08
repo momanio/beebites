@@ -200,6 +200,24 @@ try {
     await heroProduct.getAttribute('href'),
     `#menu-product-${menu.products[0]._id}`,
   )
+  // Keyboard navigation must keep focus on a control after replacing a slide.
+  const beforeKeyboard = await heroProduct.getAttribute('href')
+  await page.locator('.hero-add').focus()
+  await page.keyboard.press('ArrowLeft')
+  await page.waitForFunction((before) => {
+    const href = document.querySelector('.hero-product-link')?.getAttribute('href')
+    return href && href !== before
+  }, beforeKeyboard)
+  assert.equal(
+    await page.evaluate(() => document.activeElement?.getAttribute('aria-label')),
+    'المنتج التالي',
+  )
+  await page.keyboard.press('ArrowRight')
+  await page.waitForFunction((id) => {
+    return document.querySelector('.hero-product-link')?.getAttribute('href') ===
+      '#menu-product-' + id
+  }, menu.products[0]._id)
+
   // RTL swipe advances, and the previous button returns to the same product.
   const stage = page.locator('.hero-carousel-stage')
   await stage.dispatchEvent('pointerdown', {
@@ -329,6 +347,34 @@ try {
     .getByRole('heading', { name: 'كيك الشوكليت', exact: true })
     .waitFor({ state: 'detached' })
 
+  // Arbitrary editor-created categories stay reachable without widening the page.
+  for (let index = 0; index < 14; index++)
+    menu.categories.push({
+      _id: 'overflow-category-' + index,
+      title: 'قسم تجريبي إضافي ' + index,
+      slug: 'overflow-' + index,
+      order: index + 10,
+    })
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await page.waitForFunction(() =>
+    document.querySelectorAll('.category-nav .category-chip').length === 16,
+  )
+  assert.ok(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    'Many categories must not cause desktop horizontal overflow',
+  )
+  assert.equal(
+    await page.locator('.category-nav-inner').evaluate(
+      (element) => getComputedStyle(element).overflowX,
+    ),
+    'auto',
+  )
+  menu.categories.splice(-14)
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await page.waitForFunction(() =>
+    document.querySelectorAll('.category-nav .category-chip').length === 2,
+  )
+
   const first = page.locator('.product-card').first()
   await first
     .getByRole('button', { name: 'زيادة كمية خلية شوكليت مكس', exact: true })
@@ -357,6 +403,12 @@ try {
   await page.locator('.cart-summary').click()
   await page.locator('dialog[open]').waitFor()
   assert.equal(await page.locator('.cart-line-list li').count(), 2)
+  await page.locator('.cart-dialog').click({ position: { x: 5, y: 5 } })
+  assert.equal(await page.locator('dialog[open]').count(), 1)
+  await page.mouse.click(2, 2)
+  assert.equal(await page.locator('dialog[open]').count(), 0)
+  await page.locator('.cart-summary').click()
+  await page.locator('dialog[open]').waitFor()
   const dialogOrderUrl = new URL(
     await page.locator('.cart-dialog-send').getAttribute('href'),
   )
@@ -480,22 +532,54 @@ try {
   assert.equal(await page.locator('.hero-carousel-controls').count(), 0)
   assert.equal(await page.locator('.hero-peek').count(), 0)
 
+  // A withdrawn cart item must not return merely because it is published again.
+  await page.locator('.hero-add').click()
+  await page.locator('.cart-bar').waitFor()
+  menu.products = []
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await page.locator('.product-card').waitFor({ state: 'detached' })
+  menu.products = [fallbackMenu.products[0]]
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await page.locator('.product-card').waitFor()
+  assert.equal(await page.locator('.cart-bar').count(), 0)
+
+  // A failed initial CMS read keeps the saved cart and never offers sample stock.
+  menu.products = [
+    { ...fallbackMenu.products[0], _id: 'published-cart-product' },
+  ]
+  await page.evaluate(() =>
+    localStorage.setItem(
+      'beebites-cart-v1',
+      JSON.stringify({ 'published-cart-product': 2 }),
+    ),
+  )
   failCms = true
   await page.reload()
-  await page.locator('.product-card').first().waitFor()
-  assert.equal(await page.locator('.product-card').count(), 13)
+  await page.locator('.menu-notice').waitFor()
+  assert.equal(await page.locator('.product-card').count(), 0)
+  assert.equal(await page.locator('.cart-bar').count(), 0)
+  assert.equal(
+    await page.evaluate(() => localStorage.getItem('beebites-cart-v1')),
+    JSON.stringify({ 'published-cart-product': 2 }),
+  )
   assert.equal(await page.locator('.announcement').count(), 0)
   assert.equal(
     await page.locator('.hero-subline').innerText(),
     fallbackSettings.heroSubline,
   )
   assert.equal(await page.locator('.fab-link').isDisabled(), true)
-  await page
-    .locator('.product-card')
-    .first()
-    .getByRole('button', { name: 'زيادة كمية خلية شوكليت مكس', exact: true })
-    .click()
-  assert.ok(await page.locator('.cart-send').isDisabled())
+  failCms = false
+  await page.locator('.menu-notice button').click()
+  await page.locator('#menu-product-published-cart-product').waitFor()
+  await page.locator('.cart-send[href^="https://wa.me/"]').waitFor()
+  assert.equal(await page.locator('.product-card').count(), 1)
+  assert.ok((await page.locator('.cart-summary').innerText()).includes('11 JD'))
+  assert.equal(await page.locator('.menu-notice').count(), 0)
+  assert.equal(
+    await page.evaluate(() => document.activeElement?.id),
+    'menu-title',
+    'Retry keeps keyboard focus in the menu after removing the notice',
+  )
   // Denied localStorage must not prevent selecting products.
   const blockedStorage = await browser.newContext({
     reducedMotion: 'reduce',
@@ -510,9 +594,17 @@ try {
       },
     })
   })
-  await blockedStorage.route('**/api/sanity/**', (route) =>
-    route.fulfill({ status: 400, body: '{}' }),
-  )
+  await blockedStorage.route('https://fonts.googleapis.com/**', (route) =>
+    route.fulfill({ contentType: 'text/css', body: '' }))
+  await blockedStorage.route('**/api/sanity/**', (route) => {
+    const query = new URL(route.request().url()).searchParams.get('query') || ''
+    return route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        result: query.includes('"categories"') ? menu : settings,
+      }),
+    })
+  })
   const privatePage = await blockedStorage.newPage()
   privatePage.on('pageerror', (error) => errors.push(error.message))
   await privatePage.goto(origin)

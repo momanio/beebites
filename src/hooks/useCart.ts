@@ -4,6 +4,7 @@ import {
   getCartLines,
   MAX_QUANTITY,
   parseCart,
+  type Quantities,
 } from '../lib/cart'
 import { roundMoney } from '../lib/formatPrice'
 import type { Product } from '../types/menu'
@@ -17,13 +18,22 @@ function readCart() {
 }
 
 export function useCart(products: Product[], loading: boolean) {
-  const [quantities, setQuantities] = useState(readCart)
-  const lines = getCartLines(quantities, products)
+  const [cart, setCart] = useState<{
+    quantities: Quantities
+    catalog: Product[] | null
+  }>(() => ({ quantities: readCart(), catalog: null }))
+  const lines = getCartLines(cart.quantities, products)
   const count = lines.reduce((sum, line) => sum + line.quantity, 0)
   const total = roundMoney(lines.reduce((sum, line) => sum + line.lineTotal, 0))
-  const serialized = JSON.stringify(
-    Object.fromEntries(lines.map((line) => [line.product._id, line.quantity])),
+  const currentQuantities = Object.fromEntries(
+    lines.map((line) => [line.product._id, line.quantity]),
   )
+  const serialized = JSON.stringify(currentQuantities)
+
+  // Accept a successfully loaded catalog before rendering the cart. Removing
+  // unavailable items from state also prevents them returning on a later refresh.
+  if (!loading && cart.catalog !== products)
+    setCart({ quantities: currentQuantities, catalog: products })
 
   useEffect(() => {
     if (loading) return
@@ -37,29 +47,33 @@ export function useCart(products: Product[], loading: boolean) {
   function changeQuantity(productId: string, change: number) {
     const product = products.find((item) => item._id === productId)
     if (!product?.available || product.comingSoon || loading) return
-    setQuantities((previous) => {
+    setCart((previous) => {
       const current = Object.fromEntries(
-        getCartLines(previous, products).map((line) => [
+        getCartLines(previous.quantities, products).map((line) => [
           line.product._id,
           line.quantity,
         ]),
       )
       return {
-        ...current,
-        [productId]: Math.min(
-          MAX_QUANTITY,
-          Math.max(0, (current[productId] ?? 0) + change),
-        ),
+        ...previous,
+        quantities: {
+          ...current,
+          [productId]: Math.min(
+            MAX_QUANTITY,
+            Math.max(0, (current[productId] ?? 0) + change),
+          ),
+        },
       }
     })
   }
 
   return {
-    quantities,
+    quantities: cart.quantities,
     lines,
     count,
     total,
     changeQuantity,
-    clearCart: () => setQuantities({}),
+    clearCart: () =>
+      setCart((previous) => ({ ...previous, quantities: {} })),
   }
 }

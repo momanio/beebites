@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { MotionConfig } from 'motion/react'
 import { About } from './components/About'
 import { CartBar } from './components/CartBar'
@@ -17,11 +18,17 @@ import { rootCategories } from './lib/menu'
 import './App.css'
 
 function App() {
-  const { categories, products, loading } = useMenu()
-  const settings = useSiteSettings()
-  const cart = useCart(products, loading)
-  const hasCart = !loading && cart.count > 0
-  const mainCategories = rootCategories(categories)
+  const { categories, products, loading, ready, error, retry, retryKey } = useMenu()
+  const settings = useSiteSettings(retryKey)
+  const menuTitle = useRef<HTMLHeadingElement>(null)
+  const cart = useCart(products, loading || !ready)
+  const hasCart = ready && !loading && cart.count > 0
+  const mainCategories = ready ? rootCategories(categories) : []
+
+  function retryMenu() {
+    menuTitle.current?.focus({ preventScroll: true })
+    retry()
+  }
 
   return (
     <MotionConfig reducedMotion="user">
@@ -30,7 +37,7 @@ function App() {
         <a className="skip-link" href="#main">
           انتقل إلى المحتوى
         </a>
-        <Header settings={settings} count={loading ? 0 : cart.count} />
+        <Header settings={settings} count={loading || !ready ? 0 : cart.count} />
         {settings.announcement.enabled && settings.announcement.text && (
           <aside className="announcement" aria-label="إعلان بي بايتس">
             <Icon name="sparkles" size={17} />
@@ -41,8 +48,10 @@ function App() {
         <main id="main">
           <Hero
             settings={settings}
-            products={products}
+            products={ready ? products : []}
             loading={loading}
+            unavailable={error && !ready}
+            onRetry={retryMenu}
             quantities={cart.quantities}
             onQuantityChange={cart.changeQuantity}
           />
@@ -54,14 +63,38 @@ function App() {
             <div className="page-container menu-intro">
               <div>
                 <p className="eyebrow">اختار حلا جمعتك</p>
-                <h2 id="menu-title">قائمة بي بايتس</h2>
+                <h2 id="menu-title" ref={menuTitle} tabIndex={-1}>
+                  قائمة بي بايتس
+                </h2>
               </div>
               <p className="menu-helper">
                 <Icon name="bag" size={20} />
                 <span>شكّل صندوقك… والباقي علينا</span>
               </p>
             </div>
-            <nav className="category-nav" aria-label="أقسام القائمة">
+            {error && (
+              <div className="page-container">
+                <div className="menu-notice" role="status">
+                  <p>
+                    {ready
+                      ? 'ما قدرنا نحدّث القائمة الآن. آخر قائمة محمّلة ما زالت معروضة.'
+                      : 'ما قدرنا نحمّل القائمة الآن. صندوقك محفوظ؛ جرّب مرة ثانية.'}
+                  </p>
+                  <button
+                    type="button"
+                    className="button button-outline"
+                    onClick={retryMenu}
+                  >
+                    حاول مرة ثانية
+                  </button>
+                </div>
+              </div>
+            )}
+            <nav
+              className="category-nav"
+              aria-label="أقسام القائمة"
+              hidden={!ready}
+            >
               <div className="page-container category-nav-inner">
                 <span className="category-nav-label me-3">على ذوقك</span>
                 {mainCategories.map((category) => (
@@ -82,7 +115,7 @@ function App() {
             <div className="page-container menu-content" aria-busy={loading}>
               {loading ? (
                 <MenuSkeleton />
-              ) : categories.length ? (
+              ) : !ready ? null : categories.length ? (
                 mainCategories.map((category) => (
                   <MenuSection
                     key={category._id}
@@ -116,9 +149,11 @@ function App() {
           aria-live="polite"
           aria-atomic="true"
         >
-          {cart.count > 0
-            ? `${cart.count} قطع في الصندوق، المجموع ${cart.total} دينار أردني`
-            : 'الصندوق فارغ'}
+          {!ready || loading
+            ? ''
+            : cart.count > 0
+              ? `${cart.count} قطع في الصندوق، المجموع ${cart.total} دينار أردني`
+              : 'الصندوق فارغ'}
         </div>
         {hasCart && (
           <CartBar

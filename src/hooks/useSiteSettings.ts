@@ -5,7 +5,7 @@ import { settingsQuery } from '../lib/queries'
 import type { SiteSettings } from '../types/menu'
 import { resolveSiteSettings, type SettingsResponse } from '../lib/siteSettings'
 
-export function useSiteSettings(): SiteSettings {
+export function useSiteSettings(retryKey = 0): SiteSettings {
   const [settings, setSettings] = useState(fallbackSettings)
 
   useEffect(() => {
@@ -25,7 +25,7 @@ export function useSiteSettings(): SiteSettings {
         /* Settings fall back silently, just like the menu. */
       })
     return () => controller.abort()
-  }, [])
+  }, [retryKey])
 
   return settings
 }

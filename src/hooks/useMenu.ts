@@ -8,6 +8,9 @@ import type { MenuData } from '../types/menu'
 export function useMenu() {
   const [menu, setMenu] = useState<MenuData>(fallbackMenu)
   const [loading, setLoading] = useState(Boolean(sanityClient))
+  const [ready, setReady] = useState(!sanityClient)
+  const [error, setError] = useState(false)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     if (!sanityClient) return
@@ -26,9 +29,13 @@ export function useMenu() {
         )
         if (!Array.isArray(data?.categories) || !Array.isArray(data?.products))
           throw new Error('Invalid menu')
-        if (!controller.signal.aborted)
+        if (!controller.signal.aborted) {
           setMenu(resolveMenu(data))
+          setReady(true)
+          setError(false)
+        }
       } catch (error) {
+        if (!controller.signal.aborted) setError(true)
         if (import.meta.env.DEV && !controller.signal.aborted)
           console.warn(
             '[BeeBites] Could not load the published Sanity menu. Keeping the last menu. Check the Vite terminal, project/dataset and public dataset visibility.',
@@ -60,7 +67,13 @@ export function useMenu() {
       window.removeEventListener('online', refreshWhenVisible)
       document.removeEventListener('visibilitychange', refreshWhenVisible)
     }
-  }, [])
+  }, [attempt])
 
-  return { ...menu, loading }
+  function retry() {
+    setLoading(true)
+    setError(false)
+    setAttempt((previous) => previous + 1)
+  }
+
+  return { ...menu, loading, ready, error, retry, retryKey: attempt }
 }

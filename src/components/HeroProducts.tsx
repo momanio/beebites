@@ -51,11 +51,15 @@ function ProductPhoto({
 export function HeroProducts({
   products,
   loading,
+  unavailable,
+  onRetry,
   quantities,
   onQuantityChange,
 }: {
   products: Product[]
   loading: boolean
+  unavailable: boolean
+  onRetry: () => void
   quantities: Record<string, number>
   onQuantityChange: (id: string, change: number) => void
 }) {
@@ -71,6 +75,8 @@ export function HeroProducts({
   const [focused, setFocused] = useState(false)
   const [pageVisible, setPageVisible] = useState(() => !document.hidden)
   const root = useRef<HTMLDivElement>(null)
+  const nextControl = useRef<HTMLButtonElement>(null)
+  const previousControl = useRef<HTMLButtonElement>(null)
   const touch = useRef<{ x: number; y: number } | null>(null)
   const inView = useInView(root, { amount: 0.3 })
   const reducedMotion = useReducedMotion()
@@ -134,10 +140,19 @@ export function HeroProducts({
           setFocused(false)
       }}
       onKeyDown={(event) => {
+        if (featured.length < 2) return
         if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
         event.preventDefault()
         const rtl = getComputedStyle(event.currentTarget).direction === 'rtl'
-        move((event.key === 'ArrowLeft') === rtl ? 1 : -1)
+        const step = (event.key === 'ArrowLeft') === rtl ? 1 : -1
+        if (
+          event.target instanceof Element &&
+          event.target.closest('.hero-product-main')
+        )
+          (step > 0 ? nextControl : previousControl).current?.focus({
+            preventScroll: true,
+          })
+        move(step)
       }}
     >
       <div className="hero-showcase-heading">
@@ -303,6 +318,7 @@ export function HeroProducts({
           {featured.length > 1 && (
             <div className="hero-carousel-controls">
               <button
+                ref={previousControl}
                 type="button"
                 className="hero-carousel-arrow hero-carousel-previous"
                 onClick={() => move(-1)}
@@ -335,6 +351,7 @@ export function HeroProducts({
                 </button>
               )}
               <button
+                ref={nextControl}
                 type="button"
                 className="hero-carousel-arrow"
                 onClick={() => move(1)}
@@ -354,10 +371,24 @@ export function HeroProducts({
       ) : (
         <div className="hero-products-empty">
           <Icon name="wheat" size={72} />
-          <p>خلية حلوة أو مالحة… لكل جمعة نكهتها</p>
-          <a className="button button-outline" href="#menu">
-            اكتشف القائمة <Icon name="arrow" size={18} />
-          </a>
+          <p>
+            {unavailable
+              ? 'ما قدرنا نحمّل المنتجات حالياً.'
+              : 'خلية حلوة أو مالحة… لكل جمعة نكهتها'}
+          </p>
+          {unavailable ? (
+            <button
+              className="button button-outline"
+              type="button"
+              onClick={onRetry}
+            >
+              حاول مرة ثانية
+            </button>
+          ) : (
+            <a className="button button-outline" href="#menu">
+              اكتشف القائمة <Icon name="arrow" size={18} />
+            </a>
+          )}
         </div>
       )}
     </div>

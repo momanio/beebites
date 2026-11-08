@@ -74,7 +74,15 @@ export function CartBar({
         ref={dialog}
         aria-labelledby="cart-dialog-title"
         onClick={(event) => {
-          if (event.target === event.currentTarget) dialog.current?.close()
+          if (event.target !== event.currentTarget) return
+          const bounds = event.currentTarget.getBoundingClientRect()
+          if (
+            event.clientX < bounds.left ||
+            event.clientX > bounds.right ||
+            event.clientY < bounds.top ||
+            event.clientY > bounds.bottom
+          )
+            dialog.current?.close()
         }}
       >
         <div className="cart-dialog-header">

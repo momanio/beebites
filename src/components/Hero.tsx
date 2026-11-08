@@ -8,12 +8,16 @@ export function Hero({
   settings,
   products,
   loading,
+  unavailable,
+  onRetry,
   quantities,
   onQuantityChange,
 }: {
   settings: SiteSettings
   products: Product[]
   loading: boolean
+  unavailable: boolean
+  onRetry: () => void
   quantities: Record<string, number>
   onQuantityChange: (id: string, change: number) => void
 }) {
@@ -58,6 +62,8 @@ export function Hero({
         <HeroProducts
           products={products}
           loading={loading}
+          unavailable={unavailable}
+          onRetry={onRetry}
           quantities={quantities}
           onQuantityChange={onQuantityChange}
         />
