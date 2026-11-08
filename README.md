@@ -28,6 +28,8 @@ VITE_SANITY_API_VERSION=2026-01-01
 
 Use your actual project ID. These variables are public browser configuration, not secrets. Never add a Sanity write token to a `VITE_` variable. Restart Vite after changing them; production changes require rebuilding.
 
+Production builds automatically load the committed `.env.production`, which points to BeeBites' public Sanity project `5uk93lcn` and its `production` dataset. This keeps deployed builds connected to the menu when the hosting provider has no build variables configured. Hosting build variables and `.env.production.local` can override these public defaults; Worker runtime variables do not change the compiled storefront. Keep secrets in ignored local environment files or the hosting provider's secret settings.
+
 Studio has its own environment:
 
 ```bash
@@ -133,9 +135,13 @@ The browser suite starts its own local server on port 4175 and mocks Sanity. It 
 
 ## Deploy
 
-**Vercel:** import this repository, choose Vite, keep the root directory at the repository root, set build command `npm run build` and output directory `dist`. Add the three `VITE_SANITY_*` environment variables before building.
+**Cloudflare Workers:** connect this repository and the `main` branch in Workers & Pages. Keep the root directory at the repository root, use build command `npm run build`, and deploy command `npx wrangler deploy --assets ./dist`. Use Node.js 22.12+ (for example, build variable `NODE_VERSION=22`). The committed `.env.production` supplies the storefront's public Sanity configuration. To override it, use **Settings → Build → Build Variables and Secrets**, then trigger a new build. Settings changes apply to the next build; deploying an existing version reuses its compiled assets.
 
-**Netlify:** use `npm run build` and publish directory `dist`, with the same environment variables. `netlify.toml` provides these build defaults. No router rewrites are needed; sections use anchors.
+**Cloudflare Pages:** import this repository, choose React (Vite), keep the repository root, and use build command `npm run build` with output directory `dist`. The same committed production configuration is loaded automatically.
+
+**Vercel:** import this repository, choose Vite, keep the root directory at the repository root, set build command `npm run build` and output directory `dist`. The committed production configuration supplies the Sanity defaults; optional `VITE_SANITY_*` build variables override them.
+
+**Netlify:** use `npm run build` and publish directory `dist`, with the same production configuration and optional build variable overrides. `netlify.toml` provides these build defaults. No router rewrites are needed; sections use anchors.
 
 After deployment, register the storefront origin in Sanity CORS. Content changes only require publishing in Studio and reloading the page; no frontend deployment is needed.
 
