@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640">
+  <defs>
+    <radialGradient id="paper"><stop stop-color="#FFF8EA"/><stop offset="1" stop-color="#F4E3BC"/></radialGradient>
+    <pattern id="cells" width="104" height="90" patternUnits="userSpaceOnUse"><path d="M26 2h52l26 43-26 43H26L0 45Z" fill="none" stroke="#C97F14" stroke-opacity=".13"/></pattern>
+  </defs>
+  <path fill="url(#paper)" d="M0 0h640v640H0z"/>
+  <path fill="url(#cells)" d="M0 0h640v640H0z"/>
+  <g transform="translate(320 280)" stroke="#7A4A25" stroke-width="3" fill="#F5CE7A">
+    <path d="m0-100 87 50v100L0 100l-87-50V-50Z"/>
+    <path d="m0-56 49 28v56L0 56l-49-28v-56Z" fill="#FFF8EA"/>
+    <path d="M-22 8h44M0-14v44" fill="none" stroke-linecap="round"/>
+  </g>
+  <text x="320" y="458" text-anchor="middle" font-family="sans-serif" font-size="23" fill="#7A4A25" direction="rtl">صورة المنتج قريباً</text>
+  <text x="320" y="493" text-anchor="middle" font-family="sans-serif" font-size="12" letter-spacing="4" fill="#7A4A25">BEEBITES · PHOTO PLACEHOLDER</text>
+</svg>

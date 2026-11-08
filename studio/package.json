@@ -1,0 +1,24 @@
+{
+  "name": "beebites-studio",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "sanity dev",
+    "build": "sanity build",
+    "deploy": "sanity deploy",
+    "typecheck": "tsc --noEmit",
+    "seed": "sanity dataset import seed/menu.ndjson",
+    "cors:local": "sanity cors add http://localhost:4000 --no-credentials"
+  },
+  "overrides": {
+    "minimatch@^5.0.0": "5.1.6"
+  },
+  "dependencies": {
+    "@sanity/ui": "^3.1.11",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "sanity": "^5.9.0",
+    "styled-components": "^6.1.19"
+  }
+}
