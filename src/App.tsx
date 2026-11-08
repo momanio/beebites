@@ -38,7 +38,7 @@ function App() {
           </aside>
         )}
         <main id="main">
-          <Hero settings={settings} />
+          <Hero settings={settings} products={products} loading={loading} />
           <HighlightRibbon settings={settings} />
           <section
             id="menu"

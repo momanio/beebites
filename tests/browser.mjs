@@ -90,6 +90,17 @@ try {
   assert.equal(await page.locator('html').getAttribute('dir'), 'rtl')
   assert.equal(await page.locator('html').getAttribute('lang'), 'ar')
   assert.equal(await page.locator('.product-card').count(), 13)
+  assert.equal(await page.locator('#home a.hero-product').count(), 3)
+  const heroProduct = page.locator('#home a.hero-product').first()
+  assert.ok((await heroProduct.innerText()).includes(menu.products[0].name))
+  assert.ok((await heroProduct.innerText()).includes('5.5 JD'))
+  assert.equal(
+    await heroProduct.getAttribute('href'),
+    `#menu-product-${menu.products[0]._id}`,
+  )
+  await heroProduct.click()
+  assert.equal(new URL(page.url()).hash, `#menu-product-${menu.products[0]._id}`)
+  await page.evaluate(() => window.scrollTo(0, 0))
   assert.equal(await page.locator('#about .value-card').count(), 3)
   assert.equal(await page.locator('#about h3').first().innerText(), 'هشّة زي الغيم')
   assert.ok(!(await page.locator('#about').innerText()).includes('نص من الاستوديو'))

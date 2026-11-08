@@ -22,6 +22,8 @@ export function ProductCard({
   const titleId = `product-${product._id}`
   return (
     <article
+      id={`menu-product-${product._id}`}
+      tabIndex={-1}
       className={`product-card ${product.comingSoon ? 'product-coming-soon' : ''} ${quantity > 0 ? 'product-selected' : ''}`}
       aria-labelledby={titleId}
     >

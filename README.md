@@ -67,6 +67,7 @@ The import contains two categories, 13 products and the `siteSettings` singleton
 - Product images support hotspot cropping and are requested from Sanity at 320/640px with automatic image format. Upload the original logo without redesigning it.
 - Existing site settings are still read from `siteSettings`, with local defaults for missing values. Settings and category management are hidden from Studio's product workflow.
 - **ليش بي بايتس؟** is static. Edit its three cards in `src/data/about.ts`; CMS About card edits are ignored by the website.
+- The hero previews up to three orderable products from the same published menu. Uploaded photos take priority, with both حلو and مالح represented when photos are available. Clicking a preview jumps to that product's quantity controls in the menu. Hidden and coming-soon products are excluded; missing photos use the labeled placeholder.
 
 The local development site reads published content through Vite's `/api/sanity` proxy, bypassing browser CORS and CDN caching. It checks for menu changes every five seconds while visible and when you return to the tab. Restart `npm run dev` after changing Vite configuration. Production builds read through Sanity's CDN and refresh when you return to the tab; their origins still need Sanity CORS access.
 
