@@ -1,5 +1,4 @@
 import { defineField, defineType } from 'sanity'
-import { ProductCategoryInput } from '../components/ProductCategoryInput'
 
 export const product = defineType({
   name: 'product',
@@ -20,31 +19,19 @@ export const product = defineType({
     }),
     defineField({
       name: 'menuCategory',
-      title: 'القسم',
+      title: 'القسم القديم',
       type: 'string',
-      options: {
-        list: [
-          { title: 'حلو', value: 'sweet' },
-          { title: 'مالح', value: 'savory' },
-        ],
-        layout: 'radio',
-      },
-      initialValue: 'sweet',
-      components: { input: ProductCategoryInput },
-      validation: (rule) =>
-        rule.required().custom((value) =>
-          value === undefined || value === 'sweet' || value === 'savory'
-            ? true
-            : 'اختر حلو أو مالح.',
-        ),
+      hidden: true,
+      readOnly: true,
     }),
     defineField({
       name: 'category',
-      title: 'القسم القديم',
+      title: 'القسم',
       type: 'reference',
       to: [{ type: 'category' }],
-      hidden: true,
-      readOnly: true,
+      description:
+        'اختر قسماً رئيسياً أو فرعياً. يمكنك إنشاء قسم جديد من هنا أو من إدارة الأقسام، ثم نشره قبل نشر المنتج.',
+      validation: (rule) => rule.required(),
     }),
     defineField({
       name: 'price',

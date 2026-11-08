@@ -777,6 +777,41 @@
 .category-section + .category-section {
   margin-top: 52px;
 }
+.subcategory-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+.subcategory-nav .category-chip {
+  max-width: 100%;
+  padding-inline: 20px;
+  font-size: 12px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+.subcategory-section {
+  margin-top: 32px;
+  scroll-margin-block-start: calc(var(--header-height) + 80px);
+}
+.subcategory-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+  font-family: var(--font-display);
+  font-size: clamp(21px, 3vw, 25px);
+  font-weight: 500;
+  color: var(--chocolate);
+  overflow-wrap: anywhere;
+}
+.subcategory-title span {
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
 .section-title-wrap {
   display: flex;
   align-items: center;

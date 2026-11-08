@@ -2,15 +2,16 @@ import { writeFileSync } from 'node:fs'
 import { fallbackMenu, fallbackSettings } from '../../src/data/fallbackMenu.ts'
 
 const documents = [
-  ...fallbackMenu.categories.map((category) => ({
+  ...fallbackMenu.categories.map(({ parentId, ...category }) => ({
     ...category,
     _type: 'category',
     slug: { _type: 'slug', current: category.slug },
+    ...(parentId ? { parent: { _type: 'reference', _ref: parentId } } : {}),
   })),
   ...fallbackMenu.products.map(({ categoryId, ...product }) => ({
     ...product,
     _type: 'product',
-    menuCategory: categoryId === 'category-savory' ? 'savory' : 'sweet',
+    category: { _type: 'reference', _ref: categoryId },
   })),
   {
     ...fallbackSettings,

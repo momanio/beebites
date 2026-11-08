@@ -257,9 +257,7 @@ export function HeroProducts({
                   <ProductPhoto product={active} main />
                   <span className="hero-product-flavor">
                     <Icon name="heart" size={13} />{' '}
-                    {active.categoryId === 'category-savory'
-                      ? 'مزاجك مالح'
-                      : 'حلّي يومك'}
+                    {active.categoryTitle || 'على ذوقك'}
                   </span>
                   {active.badge && (
                     <span className="hero-product-badge">{active.badge}</span>

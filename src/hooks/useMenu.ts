@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { fallbackMenu } from '../data/fallbackMenu'
 import { sanityClient } from '../lib/sanity'
 import { menuQuery } from '../lib/queries'
+import { resolveMenu } from '../lib/menu'
 import type { MenuData } from '../types/menu'
 
 export function useMenu() {
@@ -26,15 +27,7 @@ export function useMenu() {
         if (!Array.isArray(data?.categories) || !Array.isArray(data?.products))
           throw new Error('Invalid menu')
         if (!controller.signal.aborted)
-          setMenu({
-            categories: data.categories,
-            products: data.products.filter(
-              (product) =>
-                product.available !== false &&
-                Number.isFinite(product.price) &&
-                product.price >= 0,
-            ),
-          })
+          setMenu(resolveMenu(data))
       } catch (error) {
         if (import.meta.env.DEV && !controller.signal.aborted)
           console.warn(

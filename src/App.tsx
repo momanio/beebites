@@ -13,6 +13,7 @@ import { WhatsAppFab } from './components/WhatsAppFab'
 import { useCart } from './hooks/useCart'
 import { useMenu } from './hooks/useMenu'
 import { useSiteSettings } from './hooks/useSiteSettings'
+import { rootCategories } from './lib/menu'
 import './App.css'
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
   const settings = useSiteSettings()
   const cart = useCart(products, loading)
   const hasCart = !loading && cart.count > 0
+  const mainCategories = rootCategories(categories)
 
   return (
     <MotionConfig reducedMotion="user">
@@ -62,7 +64,7 @@ function App() {
             <nav className="category-nav" aria-label="أقسام القائمة">
               <div className="page-container category-nav-inner">
                 <span className="category-nav-label me-3">على ذوقك</span>
-                {categories.map((category) => (
+                {mainCategories.map((category) => (
                   <a
                     key={category._id}
                     href={`#category-${category._id}`}
@@ -81,13 +83,12 @@ function App() {
               {loading ? (
                 <MenuSkeleton />
               ) : categories.length ? (
-                categories.map((category) => (
+                mainCategories.map((category) => (
                   <MenuSection
                     key={category._id}
                     category={category}
-                    products={products.filter(
-                      (product) => product.categoryId === category._id,
-                    )}
+                    categories={categories}
+                    products={products}
                     quantities={cart.quantities}
                     onQuantityChange={cart.changeQuantity}
                   />

@@ -108,6 +108,30 @@ try {
   assert.equal(await page.locator('html').getAttribute('dir'), 'rtl')
   assert.equal(await page.locator('html').getAttribute('lang'), 'ar')
   assert.equal(await page.locator('.product-card').count(), 13)
+  assert.deepEqual(
+    await page.locator('.category-nav .category-chip').allTextContents(),
+    ['جديدنا', 'الخلايا'],
+  )
+  assert.deepEqual(await page.locator('.subcategory-title').allTextContents(), [
+    'خلايا حلوة',
+    'خلايا مالحه',
+  ])
+  assert.equal(
+    await page
+      .locator(
+        '#category-category-cells #category-category-sweet .product-card',
+      )
+      .count(),
+    10,
+  )
+  assert.equal(
+    await page
+      .locator(
+        '#category-category-cells #category-category-savory .product-card',
+      )
+      .count(),
+    3,
+  )
   assert.equal(await page.locator('.highlight-ribbon').count(), 0)
   // The local data proxy must not become the base URL for uploaded photos.
   const productImage = page.locator('.product-card').first().locator('img')
@@ -264,6 +288,45 @@ try {
   menu.products.pop()
   await page
     .getByRole('heading', { name: 'منتج جديد منشور', exact: true })
+    .waitFor({ state: 'detached' })
+
+  // Categories published in Studio appear without a frontend deployment.
+  menu.categories.push(
+    {
+      _id: 'custom-category',
+      title: 'كيك',
+      slug: 'cakes',
+      order: 3,
+      parentId: null,
+    },
+    {
+      _id: 'custom-child',
+      title: 'كيك الشوكليت',
+      slug: 'chocolate-cakes',
+      order: 1,
+      parentId: 'custom-category',
+    },
+  )
+  menu.products.push({
+    ...menu.products[0],
+    _id: 'custom-product',
+    name: 'كيك تجريبي',
+    categoryId: 'custom-child',
+  })
+  await page
+    .getByRole('heading', { name: 'كيك الشوكليت', exact: true })
+    .waitFor()
+  assert.equal(
+    await page
+      .locator('#category-custom-category #category-custom-child .product-card')
+      .count(),
+    1,
+  )
+  assert.ok((await page.locator('.category-nav').innerText()).includes('كيك'))
+  menu.categories.splice(-2)
+  menu.products.pop()
+  await page
+    .getByRole('heading', { name: 'كيك الشوكليت', exact: true })
     .waitFor({ state: 'detached' })
 
   const first = page.locator('.product-card').first()

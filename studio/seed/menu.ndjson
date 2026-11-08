@@ -1,16 +1,18 @@
-{"_id":"category-sweet","title":"حلو","slug":{"_type":"slug","current":"sweet"},"order":1,"_type":"category"}
-{"_id":"category-savory","title":"مالح","slug":{"_type":"slug","current":"savory"},"order":2,"_type":"category"}
-{"_id":"product-chocolate-mix","name":"خلية شوكليت مكس","subtitle":"(وايت & عادي)","price":5.5,"order":1,"comingSoon":false,"available":true,"_type":"product","menuCategory":"sweet"}
-{"_id":"product-chocolate","name":"خلية شوكليت","price":5.5,"order":2,"comingSoon":false,"available":true,"_type":"product","menuCategory":"sweet"}
-{"_id":"product-cinnabon","name":"خلية سينابون","subtitle":"(وايت شوكليت و قرفة)","price":6,"order":3,"comingSoon":false,"available":true,"_type":"product","menuCategory":"sweet"}
-{"_id":"product-honey","name":"كلاسيك مع عسل","price":6,"order":4,"comingSoon":false,"available":true,"_type":"product","menuCategory":"sweet"}
-{"_id":"product-syrup","name":"كلاسيك مع قطر","price":5.5,"order":5,"comingSoon":false,"available":true,"_type":"product","menuCategory":"sweet"}
-{"_id":"product-toasted-milk","name":"خلية حليب محموس","price":6,"badge":"قريباً","order":6,"comingSoon":true,"available":true,"_type":"product","menuCategory":"sweet"}
-{"_id":"product-cheesecake","name":"cheese cake","price":6,"badge":"قريباً","order":7,"comingSoon":true,"available":true,"_type":"product","menuCategory":"sweet"}
-{"_id":"product-lotus","name":"خلية لوتس","price":6,"badge":"حشوة لوتس","order":8,"comingSoon":false,"available":true,"_type":"product","menuCategory":"sweet"}
-{"_id":"product-cinnamon-caramel","name":"خلية سينامون كراميل","subtitle":"(كراميل و قرفة)","price":6,"order":9,"comingSoon":false,"available":true,"_type":"product","menuCategory":"sweet"}
-{"_id":"product-caramel","name":"خلية كراميل","price":6,"order":10,"comingSoon":false,"available":true,"_type":"product","menuCategory":"sweet"}
-{"_id":"product-feta-syrup","name":"فيتا و زعتر مع قطر او بدون","price":5.5,"order":1,"comingSoon":false,"available":true,"_type":"product","menuCategory":"savory"}
-{"_id":"product-feta-honey","name":"فيتا و زعتر مع عسل","price":6,"order":2,"comingSoon":false,"available":true,"_type":"product","menuCategory":"savory"}
-{"_id":"product-whole-wheat","name":"خلية طحين الحبه الكاملة","subtitle":"(اي نوع)","price":7,"order":3,"comingSoon":false,"available":true,"_type":"product","menuCategory":"savory"}
+{"_id":"category-new","title":"جديدنا","slug":{"_type":"slug","current":"new"},"order":1,"_type":"category"}
+{"_id":"category-cells","title":"الخلايا","slug":{"_type":"slug","current":"cells"},"order":2,"_type":"category"}
+{"_id":"category-sweet","title":"خلايا حلوة","slug":{"_type":"slug","current":"sweet"},"order":1,"_type":"category","parent":{"_type":"reference","_ref":"category-cells"}}
+{"_id":"category-savory","title":"خلايا مالحه","slug":{"_type":"slug","current":"savory"},"order":2,"_type":"category","parent":{"_type":"reference","_ref":"category-cells"}}
+{"_id":"product-chocolate-mix","name":"خلية شوكليت مكس","subtitle":"(وايت & عادي)","price":5.5,"order":1,"comingSoon":false,"available":true,"_type":"product","category":{"_type":"reference","_ref":"category-sweet"}}
+{"_id":"product-chocolate","name":"خلية شوكليت","price":5.5,"order":2,"comingSoon":false,"available":true,"_type":"product","category":{"_type":"reference","_ref":"category-sweet"}}
+{"_id":"product-cinnabon","name":"خلية سينابون","subtitle":"(وايت شوكليت و قرفة)","price":6,"order":3,"comingSoon":false,"available":true,"_type":"product","category":{"_type":"reference","_ref":"category-sweet"}}
+{"_id":"product-honey","name":"كلاسيك مع عسل","price":6,"order":4,"comingSoon":false,"available":true,"_type":"product","category":{"_type":"reference","_ref":"category-sweet"}}
+{"_id":"product-syrup","name":"كلاسيك مع قطر","price":5.5,"order":5,"comingSoon":false,"available":true,"_type":"product","category":{"_type":"reference","_ref":"category-sweet"}}
+{"_id":"product-toasted-milk","name":"خلية حليب محموس","price":6,"badge":"قريباً","order":6,"comingSoon":true,"available":true,"_type":"product","category":{"_type":"reference","_ref":"category-sweet"}}
+{"_id":"product-cheesecake","name":"cheese cake","price":6,"badge":"قريباً","order":7,"comingSoon":true,"available":true,"_type":"product","category":{"_type":"reference","_ref":"category-sweet"}}
+{"_id":"product-lotus","name":"خلية لوتس","price":6,"badge":"حشوة لوتس","order":8,"comingSoon":false,"available":true,"_type":"product","category":{"_type":"reference","_ref":"category-sweet"}}
+{"_id":"product-cinnamon-caramel","name":"خلية سينامون كراميل","subtitle":"(كراميل و قرفة)","price":6,"order":9,"comingSoon":false,"available":true,"_type":"product","category":{"_type":"reference","_ref":"category-sweet"}}
+{"_id":"product-caramel","name":"خلية كراميل","price":6,"order":10,"comingSoon":false,"available":true,"_type":"product","category":{"_type":"reference","_ref":"category-sweet"}}
+{"_id":"product-feta-syrup","name":"فيتا و زعتر مع قطر او بدون","price":5.5,"order":1,"comingSoon":false,"available":true,"_type":"product","category":{"_type":"reference","_ref":"category-savory"}}
+{"_id":"product-feta-honey","name":"فيتا و زعتر مع عسل","price":6,"order":2,"comingSoon":false,"available":true,"_type":"product","category":{"_type":"reference","_ref":"category-savory"}}
+{"_id":"product-whole-wheat","name":"خلية طحين الحبه الكاملة","subtitle":"(اي نوع)","price":7,"order":3,"comingSoon":false,"available":true,"_type":"product","category":{"_type":"reference","_ref":"category-savory"}}
 {"whatsappNumber":"9627XXXXXXXX","defaultWhatsappMessage":"مرحبا بي بايتس! حابة أطلب من عندكم 🐝","heroSlogan":"طراوة لا تقاوم طعم لا ينسى","heroSubline":"مذاقات مميزة بمكونات فاخرة","highlightTitle":"عجينة كل الخلايا هشة وطرية زي الغيم","highlightText":"وكلها محشية جبنة كريمية فاخرة، وممكن تبدل حشوة الجبنة بـ لوتس أو شوكليت","orderNote":"لأن كل خلية بتنخبز بحب وعلى الطلب، يا ريت تطلبوا قبل بيوم. بنأكد معكم الموعد والتفاصيل على واتساب.","instagramUrl":"https://www.instagram.com/BeeBites.Jo/","facebookUrl":"https://www.facebook.com/BeeBites.Jo/","announcement":{"enabled":false,"text":""},"aboutCards":[{"_key":"fluffy","title":"هشّة زي الغيم","text":"عجينة خفيفة وطرية، كل قطعة فيها لقمة بتذوب بالقلب.","_type":"aboutCard"},{"_key":"premium","title":"مكونات على أصولها","text":"جبنة كريمية فاخرة، وحشوات غنية مختارة بكل عناية.","_type":"aboutCard"},{"_key":"homemade","title":"من بيتنا لبيتكم","text":"شغل بيت، بحب واهتمام. بنخبز كل طلب طازج إلكم.","_type":"aboutCard"}],"_id":"siteSettings","_type":"siteSettings"}

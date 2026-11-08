@@ -1,18 +1,20 @@
-import { menuCategories } from '../data/menuCategories.ts'
-
-// Retain old category references while new products use a simple fixed choice.
-// Older products without a category appear under حلو until the owner assigns one.
+// Published category references take priority; old products remain readable
+// until their legacy sweet/savory choices have been migrated.
 export const productCategoryExpression = `select(
-  menuCategory == "sweet" => "category-sweet",
-  menuCategory == "savory" => "category-savory",
-  category._ref == "category-savory" || category->slug.current == "savory" || category->title in ["مالح", "المالح"] => "category-savory",
+  defined(category->_id) => category._ref,
+  menuCategory == "savory" => coalesce(*[_type == "category" && slug.current == "savory"][0]._id, "category-savory"),
+  menuCategory == "sweet" => coalesce(*[_type == "category" && slug.current == "sweet"][0]._id, "category-sweet"),
   "category-sweet"
 )`
 
 export const menuQuery = `{
-  "categories": ${JSON.stringify(menuCategories)},
+  "categories": *[_type == "category"] | order(order asc, title asc) {
+    _id, title, "slug": slug.current, "order": coalesce(order, 0),
+    "parentId": parent._ref
+  },
   "products": *[_type == "product" && available != false] | order(order asc, name asc) {
-    _id, name, subtitle, "categoryId": ${productCategoryExpression}, price, image,
+    _id, name, subtitle, "categoryId": ${productCategoryExpression},
+    "categoryTitle": category->title, price, image,
     description, badge, "comingSoon": coalesce(comingSoon, false),
     "available": coalesce(available, true), "order": coalesce(order, 0)
   }

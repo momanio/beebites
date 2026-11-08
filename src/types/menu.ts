@@ -10,6 +10,7 @@ export interface Product {
   name: string
   subtitle?: string | null
   categoryId: string
+  categoryTitle?: string | null
   price: number
   image?: SanityImage | null
   description?: string | null
@@ -24,6 +25,7 @@ export interface Category {
   title: string
   slug: string
   order: number
+  parentId?: string | null
 }
 
 export interface MenuData {

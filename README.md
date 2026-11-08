@@ -59,11 +59,24 @@ npx sanity dataset import seed/menu.ndjson production
 
 If the dataset already exists, skip creation. Confirm or change its visibility with `npx sanity dataset visibility get production` / `npx sanity dataset visibility set production public`. Public reads are necessary for the token-free CDN client. Visibility is a project-side setting and cannot be enforced by a frontend configuration file. See the [Sanity dataset documentation](https://www.sanity.io/docs/cli-reference/cli-datasets).
 
-The import contains two categories, 13 products and the `siteSettings` singleton. The root shortcut is `npm run studio:seed -- production`. Import into an empty dataset initially. To intentionally refresh existing seed documents, add `--replace`; this overwrites edits to documents with matching IDs. `npm run seed:generate` regenerates the NDJSON from `src/data/fallbackMenu.ts`.
+The import contains four category documents, 13 products and the `siteSettings` singleton. **جديدنا** and **الخلايا** are main categories; **خلايا حلوة** and **خلايا مالحه** belong to **الخلايا**. The root shortcut is `npm run studio:seed -- production`. Import into an empty dataset initially. For an existing menu, use the category migration below. To intentionally refresh existing seed documents, add `--replace`; this overwrites edits to documents with matching IDs. `npm run seed:generate` regenerates the NDJSON from `src/data/fallbackMenu.ts`.
+
+### Upgrade an existing menu
+
+Preview the category migration using your Sanity CLI login, then apply it:
+
+```bash
+npm run studio:migrate-categories
+npm run studio:migrate-categories -- --apply
+```
+
+The migration creates missing default categories, reuses existing sweet/savory category IDs, nests them under **الخلايا**, and converts legacy product choices into category references. It preserves product names, photos, prices and availability, updates existing drafts without publishing them, saves a backup under ignored `test-results/`, and checks document revisions before applying one transaction. Repeating it after a successful migration makes no further changes. Log in with `npx sanity login` from `studio/` if needed.
 
 ## Editing content
 
-- Studio shows only **حلو** and **مالح**. Create products from either list; the category is selected automatically. You can change it using the product's **القسم** choice. Separate category documents are no longer required.
+- **إدارة الأقسام:** create, rename and order categories in Studio. Leave **القسم الرئيسي** blank for a main category such as **جديدنا**. Select **الخلايا** to create a subcategory beneath it. The hierarchy supports main categories and one level of subcategories; validation prevents self-references and deeper nesting. Publish a main category before its subcategories.
+- **المنتجات حسب الأقسام:** browse a main category's products or open its subcategories. Products created from a category's list have **القسم** selected automatically. **كل المنتجات** shows the full menu. You can also create categories directly from a product's category picker, then publish the category before publishing the product.
+- The website reads category documents from Sanity. New published categories appear automatically without a frontend deployment. The main navigation shows top-level categories; subcategory links and products appear beneath their parent. A product can be assigned directly to **جديدنا**, another main category, or a subcategory.
 - Edit names, subtitles, prices, photos, descriptions and badges. Keep **إظهار المنتج في الموقع** enabled and click **Publish** to show the product. Drafts do not appear. `comingSoon` keeps a published product visible with ordering disabled.
 - **Ordering:** change a product's numeric `order` field and publish; lower numbers appear first inside its category. Studio opens products in this order.
 - Product images support hotspot cropping and are requested from Sanity at 320/640px with automatic image format. Upload the original logo without redesigning it.
@@ -73,7 +86,7 @@ The import contains two categories, 13 products and the `siteSettings` singleton
 
 The local development site reads published content through Vite's `/api/sanity` proxy, bypassing browser CORS and CDN caching. It checks for menu changes every five seconds while visible and when you return to the tab. Restart `npm run dev` after changing Vite configuration. Production builds read through Sanity's CDN and refresh when you return to the tab; their origins still need Sanity CORS access.
 
-Old category references remain readable. For older products, choose **حلو** or **مالح** before publishing again; this also removes the old reference. Products missing a category appear under **حلو** until assigned. Existing carts use current product prices and discard hidden, removed or coming-soon products. Quantities are capped at 99 per product. Browser storage failures do not prevent ordering.
+Existing category references take priority over old `menuCategory` values. Legacy sweet/savory choices remain readable during the migration; new products require a category reference. Existing carts use current product prices and discard hidden, removed or coming-soon products. Quantities are capped at 99 per product. Browser storage failures do not prevent ordering.
 
 The placeholder number `9627XXXXXXXX` deliberately disables WhatsApp links. Replace it with the bakery's international number, digits only (no `+` or spaces). Orders include each item's name/subtitle, quantity, line price and total; the customer sends the message manually.
 

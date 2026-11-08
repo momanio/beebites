@@ -18,59 +18,89 @@ export default defineConfig({
   dataset,
   plugins: [
     structureTool({
-      structure: (S) =>
-        S.list()
+      structure: (S) => {
+        const productsInCategory = (categoryId: string) =>
+          S.documentTypeList('product')
+            .title('منتجات القسم')
+            .filter(
+              `_type == "product" && (${productCategoryExpression}) == $categoryId`,
+            )
+            .params({ categoryId: categoryId.replace(/^drafts\./, '') })
+            .initialValueTemplates([
+              S.initialValueTemplateItem('product-by-category', { categoryId }),
+            ])
+            .defaultOrdering([{ field: 'order', direction: 'asc' }])
+
+        return S.list()
           .title('بي بايتس')
           .items([
             S.listItem()
-              .title('حلو')
-              .id('sweet-products')
+              .title('كل المنتجات')
               .child(
                 S.documentTypeList('product')
-                  .title('حلو')
-                  .filter(`_type == "product" && (${productCategoryExpression}) == $categoryId`)
-                  .params({ categoryId: 'category-sweet' })
-                  .initialValueTemplates([S.initialValueTemplateItem('product-sweet')])
+                  .title('كل المنتجات')
                   .defaultOrdering([{ field: 'order', direction: 'asc' }]),
               ),
             S.listItem()
-              .title('مالح')
-              .id('savory-products')
+              .title('المنتجات حسب الأقسام')
               .child(
-                S.documentTypeList('product')
-                  .title('مالح')
-                  .filter(`_type == "product" && (${productCategoryExpression}) == $categoryId`)
-                  .params({ categoryId: 'category-savory' })
-                  .initialValueTemplates([S.initialValueTemplateItem('product-savory')])
+                S.documentTypeList('category')
+                  .title('الأقسام الرئيسية')
+                  .filter('_type == "category" && !defined(parent)')
+                  .defaultOrdering([{ field: 'order', direction: 'asc' }])
+                  .child((categoryId) =>
+                    S.list()
+                      .title('منتجات القسم وأقسامه الفرعية')
+                      .items([
+                        S.listItem()
+                          .title('منتجات هذا القسم')
+                          .child(productsInCategory(categoryId)),
+                        S.listItem()
+                          .title('الأقسام الفرعية')
+                          .child(
+                            S.documentTypeList('category')
+                              .title('الأقسام الفرعية')
+                              .filter(
+                                '_type == "category" && parent._ref == $parentId',
+                              )
+                              .params({ parentId: categoryId })
+                              .defaultOrdering([
+                                { field: 'order', direction: 'asc' },
+                              ])
+                              .child(productsInCategory),
+                          ),
+                      ]),
+                  ),
+              ),
+            S.listItem()
+              .title('إدارة الأقسام')
+              .child(
+                S.documentTypeList('category')
+                  .title('إنشاء وتعديل الأقسام')
                   .defaultOrdering([{ field: 'order', direction: 'asc' }]),
               ),
-          ]),
+          ])
+      },
     }),
   ],
   schema: {
     types: schemaTypes,
-    templates: [
+    templates: (templates) => [
+      ...templates,
       {
-        id: 'product-sweet',
-        title: 'منتج حلو',
+        id: 'product-by-category',
+        title: 'منتج في هذا القسم',
         schemaType: 'product',
-        value: {
-          menuCategory: 'sweet',
+        parameters: [{ name: 'categoryId', title: 'القسم', type: 'string' }],
+        value: ({ categoryId }: { categoryId: string }) => ({
+          category: {
+            _type: 'reference',
+            _ref: categoryId.replace(/^drafts\./, ''),
+          },
           available: true,
           comingSoon: false,
           order: 1,
-        },
-      },
-      {
-        id: 'product-savory',
-        title: 'منتج مالح',
-        schemaType: 'product',
-        value: {
-          menuCategory: 'savory',
-          available: true,
-          comingSoon: false,
-          order: 1,
-        },
+        }),
       },
     ],
   },

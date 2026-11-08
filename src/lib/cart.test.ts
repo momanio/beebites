@@ -6,8 +6,20 @@ import { getCartLines, parseCart } from './cart.ts'
 import { formatPrice } from './formatPrice.ts'
 import { buildOrderMessage, safeSocialUrl, whatsappUrl } from './whatsapp.ts'
 
-test('fallback menu matches all 13 requested products, two categories and coming-soon items', () => {
-  assert.equal(fallbackMenu.categories.length, 2)
+test('fallback menu includes the category hierarchy, all 13 products and coming-soon items', () => {
+  assert.equal(fallbackMenu.categories.length, 4)
+  assert.equal(
+    fallbackMenu.categories.find(
+      (category) => category._id === 'category-sweet',
+    )?.parentId,
+    'category-cells',
+  )
+  assert.equal(
+    fallbackMenu.categories.find(
+      (category) => category._id === 'category-savory',
+    )?.parentId,
+    'category-cells',
+  )
   assert.equal(fallbackMenu.products.length, 13)
   assert.equal(
     fallbackMenu.products.filter((product) => product.comingSoon).length,
@@ -108,16 +120,24 @@ test('Sanity seed remains in sync with local fallback data', () => {
     .trim()
     .split('\n')
     .map((line: string) => JSON.parse(line) as Record<string, unknown>)
-  assert.equal(documents.length, 16)
+  assert.equal(
+    documents.length,
+    fallbackMenu.categories.length + fallbackMenu.products.length + 1,
+  )
   for (const product of fallbackMenu.products) {
     const seeded = documents.find((document) => document._id === product._id)
     assert.ok(seeded)
     assert.equal(seeded.name, product.name)
     assert.equal(seeded.price, product.price)
     assert.equal(seeded.comingSoon, product.comingSoon)
+    assert.equal((seeded.category as { _ref: string })._ref, product.categoryId)
+  }
+  for (const category of fallbackMenu.categories) {
+    const seeded = documents.find((document) => document._id === category._id)
+    assert.equal(seeded?.title, category.title)
     assert.equal(
-      seeded.menuCategory,
-      product.categoryId === 'category-savory' ? 'savory' : 'sweet',
+      (seeded?.parent as { _ref: string } | undefined)?._ref ?? null,
+      category.parentId ?? null,
     )
   }
   const settings = documents.find((document) => document._id === 'siteSettings')

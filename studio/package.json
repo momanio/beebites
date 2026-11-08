@@ -8,6 +8,7 @@
     "build": "sanity build",
     "deploy": "sanity deploy",
     "typecheck": "tsc --noEmit",
+    "categories:migrate": "sanity exec scripts/migrateCategories.ts --with-user-token --",
     "seed": "sanity dataset import seed/menu.ndjson",
     "cors:local": "sanity cors add http://localhost:4000 --no-credentials"
   },

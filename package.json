@@ -11,6 +11,7 @@
     "studio": "npm --prefix studio run dev",
     "studio:build": "npm --prefix studio run build",
     "studio:typecheck": "npm --prefix studio run typecheck",
+    "studio:migrate-categories": "npm --prefix studio run categories:migrate --",
     "studio:seed": "npm --prefix studio run seed --",
     "studio:cors": "npm --prefix studio run cors:local",
     "test": "node --experimental-strip-types --test src/lib/*.test.ts",
