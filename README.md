@@ -135,7 +135,9 @@ The browser suite starts its own local server on port 4175 and mocks Sanity. It 
 
 ## Deploy
 
-**Cloudflare Workers:** connect this repository and the `main` branch in Workers & Pages. Keep the root directory at the repository root, use build command `npm run build`, and deploy command `npx wrangler deploy --assets ./dist`. Use Node.js 22.12+ (for example, build variable `NODE_VERSION=22`). The committed `.env.production` supplies the storefront's public Sanity configuration. To override it, use **Settings → Build → Build Variables and Secrets**, then trigger a new build. Settings changes apply to the next build; deploying an existing version reuses its compiled assets.
+**Cloudflare Workers:** connect this repository and the `main` branch in Workers & Pages. Keep the root directory at the repository root, use build command `npm run build`, and deploy command `npx wrangler deploy`. The committed `wrangler.jsonc` sets the Worker name to `beebites`, pins the required compatibility date, and serves Vite's `dist/` output. Existing deploy commands that also pass `--name beebites --assets ./dist` work with the same configuration. Use Node.js 22.12+ (for example, build variable `NODE_VERSION=22`). The committed `.env.production` supplies the storefront's public Sanity configuration. To override it, use **Settings → Build → Build Variables and Secrets**, then trigger a new build. Settings changes apply to the next build; deploying an existing version reuses its compiled assets.
+
+To validate the Cloudflare deployment configuration locally without publishing, run `npm run build` followed by `npx wrangler deploy --dry-run`.
 
 **Cloudflare Pages:** import this repository, choose React (Vite), keep the repository root, and use build command `npm run build` with output directory `dist`. The same committed production configuration is loaded automatically.
 

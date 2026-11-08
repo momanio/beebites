@@ -1,0 +1,8 @@
+{
+  "name": "beebites",
+  "compatibility_date": "2026-11-04",
+  "keep_vars": true,
+  "assets": {
+    "directory": "./dist"
+  }
+}
