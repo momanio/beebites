@@ -9,8 +9,8 @@
   --color-chocolate: #7a4a25;
   --color-espresso: #3b2314;
   --color-ribbon-red: #b3262b;
-  --font-sans: 'Cairo', sans-serif;
-  --font-display: 'Reem Kufi', 'Cairo', sans-serif;
+  --font-sans: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+  --font-display: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
 }
 
 :root {
@@ -25,7 +25,7 @@
   --muted: #78583e;
   --line: #7a4a2529;
   --header-height: 88px;
-  font-family: 'Cairo', sans-serif;
+  font-family: var(--font-sans);
   color: var(--espresso);
   background: var(--parchment);
   font-synthesis: none;
