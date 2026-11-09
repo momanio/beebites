@@ -10,16 +10,12 @@ export function Hero({
   loading,
   unavailable,
   onRetry,
-  quantities,
-  onQuantityChange,
 }: {
   settings: SiteSettings
   products: Product[]
   loading: boolean
   unavailable: boolean
   onRetry: () => void
-  quantities: Record<string, number>
-  onQuantityChange: (id: string, change: number) => void
 }) {
   return (
     <section id="home" className="hero-section" aria-labelledby="hero-title">
@@ -64,8 +60,6 @@ export function Hero({
           loading={loading}
           unavailable={unavailable}
           onRetry={onRetry}
-          quantities={quantities}
-          onQuantityChange={onQuantityChange}
         />
       </div>
       <div className="hero-bottom-line" aria-hidden="true">

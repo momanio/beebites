@@ -44,17 +44,17 @@ const imageBuilder = isConfigured
 export function imageUrl(
   image: SanityImage | null | undefined,
   width = 640,
+  fit: 'crop' | 'max' = 'crop',
 ): string | undefined {
   if (!image?.asset?._ref || !imageBuilder) return undefined
   try {
-    return imageBuilder
+    const builder = imageBuilder
       .image(image)
       .width(width)
-      .height(width)
-      .fit('crop')
+      .fit(fit)
       .auto('format')
       .quality(85)
-      .url()
+    return (fit === 'crop' ? builder.height(width) : builder).url()
   } catch {
     return undefined
   }

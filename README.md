@@ -80,9 +80,10 @@ The migration creates missing default categories, reuses existing sweet/savory c
 - Edit names, subtitles, prices, photos, descriptions and badges. Keep **إظهار المنتج في الموقع** enabled and click **Publish** to show the product. Drafts do not appear. `comingSoon` keeps a published product visible with ordering disabled.
 - **Ordering:** change a product's numeric `order` field and publish; lower numbers appear first inside its category. Studio opens products in this order.
 - Product images support hotspot cropping and are requested from Sanity at 320/640px with automatic image format. Upload the original logo without redesigning it.
+- Click or tap a menu product photo to preview its full image, name, subtitle, description and price. The honey-themed dialog adapts to mobile, supports keyboard navigation, Escape and backdrop dismissal, and returns focus to the photo when closed. Preview images use uncropped 640/1280px versions; missing photos and descriptions have labeled fallbacks. Hero cards remain view-only.
 - Existing site settings are still read from `siteSettings`, with local defaults for missing values. Settings and category management are hidden from Studio's product workflow.
 - **ليش بي بايتس؟** is static. Edit its three cards in `src/data/about.ts`; CMS About card edits are ignored by the website.
-- The hero carousel shuffles orderable products once per visit, with uploaded photos first. It keeps that order while Sanity refreshes, rotates every 5.5 seconds while visible, and pauses on hover, keyboard focus, or when the tab is hidden. Reduced-motion preferences disable automatic rotation. Visitors can swipe, use arrows or keyboard navigation, view a product in the menu, or add it directly to their box. Hidden and coming-soon products are excluded; missing photos use the labeled placeholder. Empty and single-product menus work without carousel controls.
+- The hero carousel shuffles orderable products once per visit, with uploaded photos first. It keeps that order while Sanity refreshes, rotates every 5.5 seconds while visible, and pauses on hover, keyboard focus, or when the tab is hidden. Reduced-motion preferences disable automatic rotation. Product cards are view-only; visitors can browse with swipes, arrows or keyboard navigation and add products to their box from the menu. Hidden and coming-soon products are excluded; missing photos use the labeled placeholder. Empty and single-product menus work without carousel controls.
 
 The local development site reads published content through Vite's `/api/sanity` proxy, bypassing browser CORS and CDN caching. It checks for menu changes every five seconds while visible and when you return to the tab. Restart `npm run dev` after changing Vite configuration. Production builds read through Sanity's CDN and refresh when you return to the tab; their origins still need Sanity CORS access.
 
@@ -148,7 +149,7 @@ npx playwright install chromium
 npm run test:browser
 ```
 
-The browser suite starts its own local server on port 4175 and mocks Sanity. It covers loading/fallback, CMS updates, uploaded photos served from Sanity's asset CDN even when data uses the local proxy, carousel navigation and rotation/pause, direct hero ordering, empty/single-product menus, cart persistence/reconciliation, dialog focus, navigation, RTL/LTR positioning, reduced motion, mobile touch, blocked storage and responsive widths. Screenshots go to ignored `test-results/`. It requires an environment that permits a local listening socket and Chromium subprocesses.
+The browser suite starts its own local server on port 4175 and mocks Sanity. It covers loading/fallback, CMS updates, uploaded photos served from Sanity's asset CDN even when data uses the local proxy, carousel navigation and rotation/pause, view-only hero cards, empty/single-product menus, cart persistence/reconciliation, dialog focus, navigation, RTL/LTR positioning, reduced motion, mobile touch, blocked storage and responsive widths. Screenshots go to ignored `test-results/`. It requires an environment that permits a local listening socket and Chromium subprocesses.
 
 ## Deploy
 

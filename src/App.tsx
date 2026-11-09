@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { MotionConfig } from 'motion/react'
 import { About } from './components/About'
 import { CartBar } from './components/CartBar'
@@ -8,6 +8,7 @@ import { Hero } from './components/Hero'
 import { HowToOrder } from './components/HowToOrder'
 import { Icon } from './components/Icon'
 import { MenuSection, MenuSkeleton } from './components/MenuSection'
+import { ProductPreview } from './components/ProductPreview'
 import { Seo } from './components/Seo'
 import { SocialSection } from './components/SocialSection'
 import { WhatsAppFab } from './components/WhatsAppFab'
@@ -21,6 +22,10 @@ function App() {
   const { categories, products, loading, ready, error, retry, retryKey } = useMenu()
   const settings = useSiteSettings(retryKey)
   const menuTitle = useRef<HTMLHeadingElement>(null)
+  const [previewId, setPreviewId] = useState<string | null>(null)
+  const previewProduct = products.find(
+    (product) => product._id === previewId && product.available,
+  )
   const cart = useCart(products, loading || !ready)
   const hasCart = ready && !loading && cart.count > 0
   const mainCategories = ready ? rootCategories(categories) : []
@@ -52,8 +57,6 @@ function App() {
             loading={loading}
             unavailable={error && !ready}
             onRetry={retryMenu}
-            quantities={cart.quantities}
-            onQuantityChange={cart.changeQuantity}
           />
           <section
             id="menu"
@@ -124,6 +127,7 @@ function App() {
                     products={products}
                     quantities={cart.quantities}
                     onQuantityChange={cart.changeQuantity}
+                    onPreview={setPreviewId}
                   />
                 ))
               ) : (
@@ -142,6 +146,10 @@ function App() {
           <SocialSection settings={settings} />
         </main>
         <Footer settings={settings} />
+        <ProductPreview
+          product={previewProduct}
+          onClose={() => setPreviewId(null)}
+        />
         <WhatsAppFab settings={settings} hasCart={hasCart} />
         <div
           className="sr-only"

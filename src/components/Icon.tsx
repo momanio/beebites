@@ -19,6 +19,7 @@ type IconName =
   | 'hexagon'
   | 'play'
   | 'pause'
+  | 'expand'
 
 const paths: Record<IconName, ReactNode> = {
   whatsapp: (
@@ -74,12 +75,13 @@ const paths: Record<IconName, ReactNode> = {
     </>
   ),
   menu: <path d="M4 6h16M4 12h16M4 18h16" />,
-  close: <path d="m6 6 12 12M6 18 12-12" />,
+  close: <path d="m6 6 12 12M6 18l12-12" />,
   plus: <path d="M12 5v14M5 12h14" />,
   minus: <path d="M5 12h14" />,
   hexagon: <path d="m12 2 9 5v10l-9 5-9-5V7Z" />,
   play: <path d="m8 5 11 7-11 7V5Z" />,
   pause: <path d="M8 5v14M16 5v14" />,
+  expand: <path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5" />,
 }
 
 export function Icon({

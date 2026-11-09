@@ -10,6 +10,7 @@ export function MenuSection({
   products,
   quantities,
   onQuantityChange,
+  onPreview,
   subcategory = false,
 }: {
   category: Category
@@ -17,6 +18,7 @@ export function MenuSection({
   products: Product[]
   quantities: Quantities
   onQuantityChange: (id: string, change: number) => void
+  onPreview: (id: string) => void
   subcategory?: boolean
 }) {
   const children = subcategory
@@ -61,6 +63,7 @@ export function MenuSection({
                 product={product}
                 quantity={quantities[product._id] ?? 0}
                 onQuantityChange={onQuantityChange}
+                onPreview={onPreview}
               />
             </Reveal>
           ))}
@@ -76,6 +79,7 @@ export function MenuSection({
           products={products}
           quantities={quantities}
           onQuantityChange={onQuantityChange}
+          onPreview={onPreview}
           subcategory
         />
       ))}

@@ -8,7 +8,6 @@ import {
 import type { Product } from '../types/menu'
 import { getFeaturedProducts } from '../lib/featuredProducts'
 import { formatPrice } from '../lib/formatPrice'
-import { MAX_QUANTITY } from '../lib/cart'
 import { imageUrl } from '../lib/sanity'
 import { Icon } from './Icon'
 
@@ -53,15 +52,11 @@ export function HeroProducts({
   loading,
   unavailable,
   onRetry,
-  quantities,
-  onQuantityChange,
 }: {
   products: Product[]
   loading: boolean
   unavailable: boolean
   onRetry: () => void
-  quantities: Record<string, number>
-  onQuantityChange: (id: string, change: number) => void
 }) {
   const [seed] = useState(() => Math.floor(Math.random() * 0x100000000))
   const featured = useMemo(
@@ -75,8 +70,6 @@ export function HeroProducts({
   const [focused, setFocused] = useState(false)
   const [pageVisible, setPageVisible] = useState(() => !document.hidden)
   const root = useRef<HTMLDivElement>(null)
-  const nextControl = useRef<HTMLButtonElement>(null)
-  const previousControl = useRef<HTMLButtonElement>(null)
   const touch = useRef<{ x: number; y: number } | null>(null)
   const inView = useInView(root, { amount: 0.3 })
   const reducedMotion = useReducedMotion()
@@ -85,7 +78,6 @@ export function HeroProducts({
     featured.findIndex((product) => product._id === activeId),
   )
   const active = featured[activeIndex]
-  const quantity = active ? (quantities[active._id] ?? 0) : 0
   const slideIds = featured.map((product) => product._id).join(',')
   const canRotate =
     featured.length > 1 &&
@@ -145,13 +137,6 @@ export function HeroProducts({
         event.preventDefault()
         const rtl = getComputedStyle(event.currentTarget).direction === 'rtl'
         const step = (event.key === 'ArrowLeft') === rtl ? 1 : -1
-        if (
-          event.target instanceof Element &&
-          event.target.closest('.hero-product-main')
-        )
-          (step > 0 ? nextControl : previousControl).current?.focus({
-            preventScroll: true,
-          })
         move(step)
       }}
     >
@@ -219,18 +204,15 @@ export function HeroProducts({
                 // With two products, one neighboring card is enough.
                 if (featured.length === 2 && step === -1) return null
                 return (
-                  <button
+                  <div
                     key={step}
-                    type="button"
                     className={`hero-peek ${step === -1 ? 'hero-peek-previous' : 'hero-peek-next'}`}
-                    onClick={() => move(step)}
-                    aria-label={`اعرض ${product.name}`}
                   >
                     <ProductPhoto key={product._id} product={product} />
                     <span className="hero-peek-name" dir="auto">
                       {product.name}
                     </span>
-                  </button>
+                  </div>
                 )
               })}
             <AnimatePresence initial={false} mode="wait" custom={direction}>
@@ -264,11 +246,7 @@ export function HeroProducts({
                   ease: 'easeOut',
                 }}
               >
-                <a
-                  className="hero-product-link"
-                  href={`#menu-product-${active._id}`}
-                  aria-label={`تفاصيل ${active.name}`}
-                >
+                <div className="hero-product-image">
                   <ProductPhoto product={active} main />
                   <span className="hero-product-flavor">
                     <Icon name="heart" size={13} />{' '}
@@ -277,19 +255,18 @@ export function HeroProducts({
                   {active.badge && (
                     <span className="hero-product-badge">{active.badge}</span>
                   )}
-                </a>
+                </div>
                 <div className="hero-product-caption">
                   <div
                     className="hero-product-title-row"
                     aria-live={canRotate ? 'off' : 'polite'}
                   >
-                    <a
+                    <span
                       className="hero-product-name"
                       dir="auto"
-                      href={`#menu-product-${active._id}`}
                     >
                       {active.name}
-                    </a>
+                    </span>
                     <span className="hero-product-price" dir="ltr">
                       {formatPrice(active.price)}
                     </span>
@@ -297,20 +274,6 @@ export function HeroProducts({
                   <p className="hero-product-subtitle">
                     {active.subtitle || 'خلية صغيرة… سعادة كبيرة'}
                   </p>
-                  <button
-                    type="button"
-                    className={`button hero-add ${quantity > 0 ? 'hero-added' : ''}`}
-                    onClick={() => onQuantityChange(active._id, 1)}
-                    disabled={quantity >= MAX_QUANTITY}
-                    aria-label={`أضف ${active.name} لصندوقك`}
-                  >
-                    <Icon name={quantity > 0 ? 'plus' : 'bag'} size={19} />
-                    {quantity > 0 ? 'أضف واحدة كمان' : 'أضف لصندوقك'}
-                    <span className="hero-add-detail">
-                      {quantity > 0 ? `${quantity} في صندوقك` : 'اختيار حلو'}
-                      <Icon name="arrow" size={16} />
-                    </span>
-                  </button>
                 </div>
               </motion.article>
             </AnimatePresence>
@@ -318,7 +281,6 @@ export function HeroProducts({
           {featured.length > 1 && (
             <div className="hero-carousel-controls">
               <button
-                ref={previousControl}
                 type="button"
                 className="hero-carousel-arrow hero-carousel-previous"
                 onClick={() => move(-1)}
@@ -351,7 +313,6 @@ export function HeroProducts({
                 </button>
               )}
               <button
-                ref={nextControl}
                 type="button"
                 className="hero-carousel-arrow"
                 onClick={() => move(1)}
@@ -364,9 +325,6 @@ export function HeroProducts({
           <p className="hero-showcase-hint">
             <Icon name="heart" size={13} /> اختار اللي بتحبّه… وإحنا نخبزه إلك
           </p>
-          <span className="sr-only" role="status">
-            {quantity > 0 ? `${active.name}، ${quantity} في صندوقك` : ''}
-          </span>
         </>
       ) : (
         <div className="hero-products-empty">

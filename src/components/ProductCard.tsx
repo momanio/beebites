@@ -9,12 +9,14 @@ interface ProductCardProps {
   product: Product
   quantity: number
   onQuantityChange: (id: string, change: number) => void
+  onPreview: (id: string) => void
 }
 
 export function ProductCard({
   product,
   quantity,
   onQuantityChange,
+  onPreview,
 }: ProductCardProps) {
   const [failedSource, setFailedSource] = useState<string>()
   const source = imageUrl(product.image, 640)
@@ -27,8 +29,14 @@ export function ProductCard({
       className={`product-card ${product.comingSoon ? 'product-coming-soon' : ''} ${quantity > 0 ? 'product-selected' : ''}`}
       aria-labelledby={titleId}
     >
-      <div className="product-image-wrap">
-        <div className="product-hex-glow" aria-hidden="true" />
+      <button
+        type="button"
+        className="product-image-wrap"
+        aria-label={`عرض تفاصيل ${product.name}`}
+        aria-haspopup="dialog"
+        onClick={() => onPreview(product._id)}
+      >
+        <span className="product-hex-glow" aria-hidden="true" />
         <img
           src={hasImage ? source : '/product-placeholder.svg'}
           srcSet={
@@ -58,7 +66,11 @@ export function ProductCard({
           </span>
         )}
         <span className="card-honey-drip" aria-hidden="true" />
-      </div>
+        <span className="product-preview-hint" aria-hidden="true">
+          <Icon name="expand" size={14} />
+          نظرة أقرب
+        </span>
+      </button>
       <div className="product-copy">
         <h3 id={titleId} dir="auto">
           {product.name}

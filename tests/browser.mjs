@@ -67,6 +67,7 @@ try {
   page.on('pageerror', (error) => errors.push(error.message))
   let failCms = false
   let menu = structuredClone(fallbackMenu)
+  menu.products[0].description = 'عجينة هشة وطرية، محشية بالشوكليت ومخبوزة على طلبك.\nلقمة حلوة بتكمّل جمعتك.'
   menu.products[0].image = {
     _type: 'image',
     asset: {
@@ -154,9 +155,63 @@ try {
       .count(),
     0,
   )
+  // Product photos open an accessible preview without changing the cart.
+  const preview = page.locator('.product-preview[open]')
+  const previewTrigger = page.locator('.product-card .product-image-wrap').first()
+  await previewTrigger.click()
+  await preview.waitFor()
+  assert.equal(await preview.getAttribute('aria-labelledby'), 'product-preview-title')
+  assert.equal(await preview.locator('h2').innerText(), menu.products[0].name)
+  assert.equal(await preview.locator('.product-preview-description').innerText(), menu.products[0].description)
+  assert.equal(await preview.locator('.product-preview-subtitle').innerText(), menu.products[0].subtitle)
+  const previewImage = preview.locator('img')
+  assert.equal(new URL(await previewImage.getAttribute('src')).searchParams.get('fit'), 'max')
+  assert.equal(new URL(await previewImage.getAttribute('src')).searchParams.has('h'), false)
+  await page.waitForFunction((image) => image.complete && image.naturalWidth > 0, await previewImage.elementHandle())
+  assert.equal(await page.locator('.cart-bar').count(), 0)
+  assert.equal(await page.locator('body').evaluate((element) => getComputedStyle(element).overflow), 'hidden')
+  assert.equal(await preview.locator('.product-preview-close').evaluate((element) => element === document.activeElement), true)
+  await page.keyboard.press('Shift+Tab')
+  assert.equal(await preview.getByRole('button', { name: 'رجوع للقائمة' }).evaluate((element) => element === document.activeElement), true)
+  await page.keyboard.press('Tab')
+  assert.equal(await preview.locator('.product-preview-close').evaluate((element) => element === document.activeElement), true)
+  await preview.locator('h2').click()
+  assert.equal(await preview.count(), 1, 'Clicking modal content keeps it open')
+  await page.keyboard.press('Escape')
+  await preview.waitFor({ state: 'hidden' })
+  assert.equal(await previewTrigger.evaluate((element) => element === document.activeElement), true)
+  await page.keyboard.press('Enter')
+  await preview.waitFor()
+  await preview.locator('.product-preview-close').click()
+  await preview.waitFor({ state: 'hidden' })
+  await previewTrigger.click()
+  await preview.waitFor()
+  await page.mouse.click(2, 2)
+  await preview.waitFor({ state: 'hidden' })
+  assert.equal(await previewTrigger.evaluate((element) => element === document.activeElement), true)
+
+  // Missing descriptions and photos, including coming-soon items, still preview.
+  await page.locator('.product-coming-soon .product-image-wrap').first().click()
+  await preview.waitFor()
+  assert.equal(await preview.locator('img').getAttribute('src'), '/product-placeholder.svg')
+  assert.equal(await preview.locator('.product-preview-placeholder').count(), 1)
+  assert.equal(await preview.locator('.product-preview-description').innerText(), 'تفاصيل هالنكهة بنشاركها معك قريباً.')
+  assert.equal(await preview.locator('.product-preview-badge').innerText(), 'قريباً… استنّونا')
+  await preview.getByRole('button', { name: 'رجوع للقائمة' }).click()
+  await preview.waitFor({ state: 'hidden' })
+
+  const failPhoto = (route) => route.abort()
+  await page.route('https://cdn.sanity.io/images/**', failPhoto)
+  await previewTrigger.click()
+  await preview.locator('.product-preview-placeholder').waitFor()
+  assert.equal(await preview.locator('img').getAttribute('src'), '/product-placeholder.svg')
+  await page.keyboard.press('Escape')
+  await preview.waitFor({ state: 'hidden' })
+  await page.unroute('https://cdn.sanity.io/images/**', failPhoto)
+
   assert.equal(await page.locator('#home .hero-product-main').count(), 1)
   assert.equal(await page.locator('#home .hero-peek').count(), 2)
-  const heroProduct = page.locator('#home .hero-product-link')
+  const heroProduct = page.locator('#home .hero-product-name')
   assert.ok(
     (await page.locator('.hero-product-caption').innerText()).includes(
       menu.products[0].name,
@@ -167,56 +222,53 @@ try {
       '5.5 JD',
     ),
   )
+  // Hero cards only display products; clicking them cannot navigate or order.
   assert.equal(
-    await heroProduct.getAttribute('href'),
-    `#menu-product-${menu.products[0]._id}`,
+    await page.locator('.hero-carousel-stage a, .hero-carousel-stage button, .hero-carousel-stage [tabindex]').count(),
+    0,
   )
+  const beforeHeroClick = page.url()
+  await page.locator('.hero-product-image').click()
   await heroProduct.click()
-  assert.equal(
-    new URL(page.url()).hash,
-    `#menu-product-${menu.products[0]._id}`,
-  )
+  await page.locator('.hero-peek').first().dispatchEvent('click')
+  assert.equal(page.url(), beforeHeroClick)
+  assert.equal(await heroProduct.innerText(), menu.products[0].name)
+  assert.equal(await page.locator('.cart-bar').count(), 0)
   await page.evaluate(() => window.scrollTo(0, 0))
   // Every orderable product appears once before the shuffled carousel wraps.
-  const eligibleIds = menu.products
+  const eligibleNames = menu.products
     .filter((product) => product.available && !product.comingSoon)
-    .map((product) => product._id)
-  const carouselIds = new Set()
-  for (let index = 0; index < eligibleIds.length; index++) {
-    const previousHref = await heroProduct.getAttribute('href')
-    carouselIds.add(previousHref.replace('#menu-product-', ''))
+    .map((product) => product.name)
+  const carouselNames = new Set()
+  for (let index = 0; index < eligibleNames.length; index++) {
+    const previousName = await heroProduct.innerText()
+    carouselNames.add(previousName)
     await page
       .getByRole('button', { name: 'المنتج التالي', exact: true })
       .click()
     await page.waitForFunction((previous) => {
-      const href = document
-        .querySelector('.hero-product-link')
-        ?.getAttribute('href')
-      return href && href !== previous
-    }, previousHref)
+      const name = document.querySelector('.hero-product-name')?.textContent
+      return name && name !== previous
+    }, previousName)
   }
-  assert.deepEqual(carouselIds, new Set(eligibleIds))
-  assert.equal(
-    await heroProduct.getAttribute('href'),
-    `#menu-product-${menu.products[0]._id}`,
-  )
+  assert.deepEqual(carouselNames, new Set(eligibleNames))
+  assert.equal(await heroProduct.innerText(), menu.products[0].name)
   // Keyboard navigation must keep focus on a control after replacing a slide.
-  const beforeKeyboard = await heroProduct.getAttribute('href')
-  await page.locator('.hero-add').focus()
+  const beforeKeyboard = await heroProduct.innerText()
+  await page.getByRole('button', { name: 'المنتج التالي', exact: true }).focus()
   await page.keyboard.press('ArrowLeft')
   await page.waitForFunction((before) => {
-    const href = document.querySelector('.hero-product-link')?.getAttribute('href')
-    return href && href !== before
+    const name = document.querySelector('.hero-product-name')?.textContent
+    return name && name !== before
   }, beforeKeyboard)
   assert.equal(
     await page.evaluate(() => document.activeElement?.getAttribute('aria-label')),
     'المنتج التالي',
   )
   await page.keyboard.press('ArrowRight')
-  await page.waitForFunction((id) => {
-    return document.querySelector('.hero-product-link')?.getAttribute('href') ===
-      '#menu-product-' + id
-  }, menu.products[0]._id)
+  await page.waitForFunction((name) => {
+    return document.querySelector('.hero-product-name')?.textContent === name
+  }, menu.products[0].name)
 
   // RTL swipe advances, and the previous button returns to the same product.
   const stage = page.locator('.hero-carousel-stage')
@@ -230,27 +282,22 @@ try {
     clientY: 205,
     pointerType: 'touch',
   })
-  await page.waitForFunction((id) => {
-    const href = document
-      .querySelector('.hero-product-link')
-      ?.getAttribute('href')
-    return href && href !== `#menu-product-${id}`
-  }, menu.products[0]._id)
-  assert.notEqual(
-    await heroProduct.getAttribute('href'),
-    `#menu-product-${menu.products[0]._id}`,
-  )
+  await page.waitForFunction((previous) => {
+    const name = document.querySelector('.hero-product-name')?.textContent
+    return name && name !== previous
+  }, menu.products[0].name)
+  assert.notEqual(await heroProduct.innerText(), menu.products[0].name)
   await page.getByRole('button', { name: 'المنتج السابق', exact: true }).click()
+  // Ordering remains available from the menu.
   await page
+    .locator('.product-card')
+    .first()
     .getByRole('button', {
-      name: `أضف ${menu.products[0].name} لصندوقك`,
+      name: `زيادة كمية ${menu.products[0].name}`,
       exact: true,
     })
     .click()
   await page.locator('.cart-bar').waitFor()
-  assert.ok(
-    (await page.locator('.hero-add').innerText()).includes('1 في صندوقك'),
-  )
   assert.ok(
     (await page.locator('.cart-summary').innerText()).includes('5.5 JD'),
   )
@@ -461,11 +508,10 @@ try {
       ),
       `Overflow at ${width}px`,
     )
-    const heroAdd = await page.locator('.hero-add').boundingBox()
-    assert.ok(heroAdd.height >= 44, `Order button is easy to tap at ${width}px`)
+    const heroCard = await page.locator('.hero-product-main').boundingBox()
     assert.ok(
-      heroAdd.x >= 0 && heroAdd.x + heroAdd.width <= width,
-      `Hero order button fits at ${width}px`,
+      heroCard.x >= 0 && heroCard.x + heroCard.width <= width,
+      `Hero product card fits at ${width}px`,
     )
     for (const button of await page.locator('.hero-carousel-arrow').all()) {
       const box = await button.boundingBox()
@@ -473,6 +519,18 @@ try {
         box.width >= 44 && box.height >= 44,
         `Carousel control is easy to tap at ${width}px`,
       )
+    }
+    for (const colorScheme of ['light', 'dark']) {
+      await page.emulateMedia({ colorScheme })
+      await previewTrigger.click()
+      await preview.waitFor()
+      const bounds = await preview.boundingBox()
+      assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= width, `Preview fits at ${width}px in ${colorScheme} mode`)
+      assert.ok(bounds.y >= 0 && bounds.y + bounds.height <= 900, 'Preview fits viewport height')
+      assert.equal(await preview.evaluate((element) => element.scrollWidth <= element.clientWidth), true)
+      await page.screenshot({ path: `test-results/product-preview-${width}-${colorScheme}.png` })
+      await preview.getByRole('button', { name: 'رجوع للقائمة' }).click()
+      await preview.waitFor({ state: 'hidden' })
     }
     if (width < 768) {
       await page
@@ -511,6 +569,23 @@ try {
     }
   }
 
+  // Long descriptions stay readable on small screens with the close control reachable.
+  await page.setViewportSize({ width: 320, height: 568 })
+  const originalDescription = menu.products[0].description
+  menu.products[0].description = originalDescription.repeat(24)
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await page.waitForFunction((description) => document.querySelector('.product-card .product-description')?.textContent === description, menu.products[0].description)
+  await previewTrigger.click()
+  await preview.waitFor()
+  await preview.evaluate((element) => { element.scrollTop = element.scrollHeight })
+  const stickyClose = await preview.locator('.product-preview-close').boundingBox()
+  assert.ok(stickyClose.y >= 0 && stickyClose.y + stickyClose.height <= 568)
+  assert.equal(await preview.evaluate((element) => element.scrollWidth <= element.clientWidth), true)
+  await preview.locator('.product-preview-close').click()
+  await preview.waitFor({ state: 'hidden' })
+  menu.products[0].description = originalDescription
+  await page.setViewportSize({ width: 1440, height: 900 })
+
   // Normal motion rotates the carousel; an explicit pause persists after blur.
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.clock.install()
@@ -518,22 +593,20 @@ try {
   await page.locator('.hero-carousel-play').waitFor()
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }))
   await page.mouse.move(1, 1)
-  const beforeRotation = await heroProduct.getAttribute('href')
+  const beforeRotation = await heroProduct.innerText()
   await page.clock.runFor(6500)
   await page.waitForFunction((before) => {
-    const href = document
-      .querySelector('.hero-product-link')
-      ?.getAttribute('href')
-    return href && href !== before
+    const name = document.querySelector('.hero-product-name')?.textContent
+    return name && name !== before
   }, beforeRotation)
   await page
     .getByRole('button', { name: 'إيقاف عرض المنتجات مؤقتاً', exact: true })
     .click()
   await page.locator('#hero-title').click()
   await page.mouse.move(1, 1)
-  const beforePause = await heroProduct.getAttribute('href')
+  const beforePause = await heroProduct.innerText()
   await page.clock.runFor(12000)
-  assert.equal(await heroProduct.getAttribute('href'), beforePause)
+  assert.equal(await heroProduct.innerText(), beforePause)
   await page.emulateMedia({ reducedMotion: 'reduce' })
 
   menu = { ...menu, products: [] }
@@ -547,11 +620,14 @@ try {
   assert.equal(await page.locator('.hero-peek').count(), 0)
 
   // A withdrawn cart item must not return merely because it is published again.
-  await page.locator('.hero-add').click()
+  await page.locator('.product-card .quantity-label').click()
   await page.locator('.cart-bar').waitFor()
+  await previewTrigger.click()
+  await preview.waitFor()
   menu.products = []
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
   await page.locator('.product-card').waitFor({ state: 'detached' })
+  await preview.waitFor({ state: 'hidden' })
   menu.products = [fallbackMenu.products[0]]
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
   await page.locator('.product-card').waitFor()
@@ -623,12 +699,12 @@ try {
   privatePage.on('pageerror', (error) => errors.push(error.message))
   await privatePage.goto(origin)
   await privatePage.locator('.product-card').first().waitFor()
-  await privatePage.locator('.hero-add').tap()
+  await privatePage.locator('.product-card .quantity-label').tap()
   await privatePage.locator('.cart-bar').waitFor()
   await blockedStorage.close()
   assert.deepEqual(errors, [])
   console.log(
-    'Browser checks passed: CMS loading/fallback, Sanity CDN photos, shuffled carousel, swipe/arrow navigation, autoplay/pause/reduced motion, hero add-to-box, empty/single-product menus, cart persistence, WhatsApp orders, mobile touch, dialog focus, RTL/LTR, blocked storage and four viewport sizes.',
+    'Browser checks passed: CMS loading/fallback, Sanity CDN photos, product previews with keyboard focus/dismissal/image fallback/long content, shuffled carousel, swipe/arrow navigation, autoplay/pause/reduced motion, view-only hero cards, empty/single-product menus, cart persistence, WhatsApp orders, mobile touch, dialog focus, RTL/LTR, blocked storage, light/dark preferences and four viewport sizes.',
   )
 } finally {
   await browser?.close()
