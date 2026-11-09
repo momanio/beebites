@@ -23,7 +23,15 @@ export function Footer({ settings }: { settings: SiteSettings }) {
       <div className="page-container footer-bottom">
         <span>بي بايتس — طراوة بكل لقمة</span>
         <p dir="ltr">
-          © {new Date().getFullYear()} Omar Momani. All rights reserved.
+          © {new Date().getFullYear()}{' '}
+          <a
+            href="https://omarmomani.is-a.dev"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Omar Momani
+          </a>
+          . All rights reserved.
         </p>
       </div>
     </footer>
