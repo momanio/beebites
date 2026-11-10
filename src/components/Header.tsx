@@ -66,6 +66,9 @@ export function Header({
           onClick={() => setOpen(false)}
         >
           <BrandLogo logo={settings.logo} />
+          <span className="mobile-brand-name" lang="en" dir="ltr" aria-hidden="true">
+            BeeBites
+          </span>
         </a>
         <nav className="desktop-nav" aria-label="القائمة الرئيسية">
           {links.map((link) => (
@@ -87,9 +90,11 @@ export function Header({
           )}
           <WhatsAppLink
             settings={settings}
-            className="button button-chocolate header-order"
+            className="button header-order"
           >
-            <Icon name="whatsapp" size={19} />
+            <span className="header-order-icon" aria-hidden="true">
+              <Icon name="whatsapp" size={18} />
+            </span>
             <span>اطلب الآن</span>
           </WhatsAppLink>
           <button

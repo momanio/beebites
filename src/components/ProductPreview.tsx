@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Product } from '../types/menu'
+import type { CartLine, Product, SiteSettings } from '../types/menu'
+import { MAX_QUANTITY } from '../lib/cart'
 import { imageUrl } from '../lib/sanity'
 import { formatPrice } from '../lib/formatPrice'
+import { buildOrderMessage } from '../lib/whatsapp'
 import { Icon } from './Icon'
+import { WhatsAppLink } from './WhatsAppLink'
 
 function PreviewPhoto({ product }: { product: Product }) {
   const source = imageUrl(product.image, 1280, 'max')
@@ -39,12 +42,23 @@ function PreviewPhoto({ product }: { product: Product }) {
 
 export function ProductPreview({
   product,
+  quantity,
+  lines,
+  settings,
+  orderingDisabled,
+  onQuantityChange,
   onClose,
 }: {
   product: Product | undefined
+  quantity: number
+  lines: CartLine[]
+  settings: SiteSettings
+  orderingDisabled: boolean
+  onQuantityChange: (id: string, change: number) => void
   onClose: () => void
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
+  const increase = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     const element = dialog.current
@@ -72,9 +86,11 @@ export function ProductPreview({
       }}
       onKeyDown={(event) => {
         if (event.key !== 'Tab') return
-        const buttons = event.currentTarget.querySelectorAll<HTMLButtonElement>('button')
-        const first = buttons[0]
-        const last = buttons[buttons.length - 1]
+        const controls = event.currentTarget.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), a[href]',
+        )
+        const first = controls[0]
+        const last = controls[controls.length - 1]
         if (event.shiftKey && document.activeElement === first) {
           event.preventDefault()
           last?.focus()
@@ -144,9 +160,73 @@ export function ProductPreview({
                   <span>السعر</span>
                   <bdi>{formatPrice(product.price)}</bdi>
                 </div>
-                <button type="button" className="button button-chocolate" onClick={close}>
-                  رجوع للقائمة <Icon name="arrow" size={18} />
-                </button>
+                {!product.comingSoon && (
+                  <div
+                    className="quantity-control product-preview-quantity"
+                    role="group"
+                    aria-label={`كمية ${product.name} في الصندوق`}
+                  >
+                    <button
+                      ref={increase}
+                      type="button"
+                      disabled={orderingDisabled || quantity >= MAX_QUANTITY}
+                      aria-label={`زيادة كمية ${product.name} في التفاصيل`}
+                      onClick={() => onQuantityChange(product._id, 1)}
+                    >
+                      <Icon name="plus" size={18} />
+                    </button>
+                    <output aria-live="polite" aria-atomic="true">
+                      {quantity}
+                      <span className="sr-only"> في الصندوق</span>
+                    </output>
+                    <button
+                      type="button"
+                      disabled={orderingDisabled || quantity === 0}
+                      aria-label={`تقليل كمية ${product.name} في التفاصيل`}
+                      onClick={() => onQuantityChange(product._id, -1)}
+                    >
+                      <Icon name="minus" size={18} />
+                    </button>
+                  </div>
+                )}
+                {!product.comingSoon && quantity > 0 && (
+                  <p className="product-preview-line-total">
+                    <span>{quantity} في صندوقك · مجموع الصنف</span>
+                    <bdi>{formatPrice(product.price * quantity)}</bdi>
+                  </p>
+                )}
+                <div className="product-preview-actions">
+                  {product.comingSoon ? (
+                    <button type="button" className="button button-chocolate" disabled>
+                      قريباً… استنّونا
+                    </button>
+                  ) : quantity > 0 ? (
+                    <WhatsAppLink
+                      settings={settings}
+                      message={buildOrderMessage(lines)}
+                      className="button button-chocolate product-preview-send"
+                    >
+                      <Icon name="whatsapp" size={18} />
+                      أرسل الطلب عبر واتساب
+                    </WhatsAppLink>
+                  ) : (
+                    <button
+                      type="button"
+                      className="button button-chocolate product-preview-add"
+                      disabled={orderingDisabled}
+                      onClick={() => {
+                        onQuantityChange(product._id, 1)
+                        increase.current?.focus()
+                      }}
+                    >
+                      <Icon name="bag" size={18} />
+                      أضف إلى الصندوق
+                    </button>
+                  )}
+                  <button type="button" className="button button-outline" onClick={close}>
+                    رجوع للقائمة <Icon name="arrow" size={18} />
+                  </button>
+                </div>
               </div>
             </div>
           </div>

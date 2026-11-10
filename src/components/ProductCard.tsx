@@ -73,7 +73,14 @@ export function ProductCard({
       </button>
       <div className="product-copy">
         <h3 id={titleId} dir="auto">
-          {product.name}
+          <button
+            type="button"
+            className="product-title-button"
+            aria-haspopup="dialog"
+            onClick={() => onPreview(product._id)}
+          >
+            {product.name}
+          </button>
         </h3>
         <p className="product-subtitle">{product.subtitle || '\u00a0'}</p>
         {product.description && (

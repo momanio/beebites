@@ -13,7 +13,7 @@ export function WhatsAppFab({
     <div className={`whatsapp-fab ${hasCart ? 'fab-with-cart' : ''}`}>
       <WhatsAppLink
         settings={settings}
-        className="fab-link"
+        className="fab-link button-whatsapp"
         label="تواصل معنا على واتساب"
       >
         <Icon name="whatsapp" size={28} />

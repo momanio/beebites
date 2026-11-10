@@ -51,13 +51,7 @@ function App() {
           </aside>
         )}
         <main id="main">
-          <Hero
-            settings={settings}
-            products={ready ? products : []}
-            loading={loading}
-            unavailable={error && !ready}
-            onRetry={retryMenu}
-          />
+          <Hero />
           <section
             id="menu"
             className="menu-section section-space"
@@ -99,7 +93,6 @@ function App() {
               hidden={!ready}
             >
               <div className="page-container category-nav-inner">
-                <span className="category-nav-label me-3">على ذوقك</span>
                 {mainCategories.map((category) => (
                   <a
                     key={category._id}
@@ -148,6 +141,11 @@ function App() {
         <Footer settings={settings} />
         <ProductPreview
           product={previewProduct}
+          quantity={cart.lines.find((line) => line.product._id === previewId)?.quantity ?? 0}
+          lines={cart.lines}
+          settings={settings}
+          orderingDisabled={loading || !ready}
+          onQuantityChange={cart.changeQuantity}
           onClose={() => setPreviewId(null)}
         />
         <WhatsAppFab settings={settings} hasCart={hasCart} />

@@ -81,7 +81,8 @@ try {
     defaultWhatsappMessage: 'test',
     highlightTitle: 'test',
     highlightText: 'testing',
-    heroSubline: 'مذاقات من إعدادات الموقع',
+    heroSlogan: 'BeeBites',
+    heroSubline: 'test',
     announcement: { enabled: true, text: 'إعلان تجريبي من الاستوديو' },
     aboutCards: [
       { _key: 'cms-only', title: 'نص من الاستوديو', text: 'لا يظهر في الموقع' },
@@ -197,6 +198,9 @@ try {
   assert.equal(await preview.locator('.product-preview-placeholder').count(), 1)
   assert.equal(await preview.locator('.product-preview-description').innerText(), 'تفاصيل هالنكهة بنشاركها معك قريباً.')
   assert.equal(await preview.locator('.product-preview-badge').innerText(), 'قريباً… استنّونا')
+  assert.equal(await preview.locator('.product-preview-quantity').count(), 0)
+  assert.equal(await preview.getByRole('button', { name: 'قريباً… استنّونا' }).isDisabled(), true)
+  assert.equal(await preview.locator('.product-preview-add, .product-preview-send').count(), 0)
   await preview.getByRole('button', { name: 'رجوع للقائمة' }).click()
   await preview.waitFor({ state: 'hidden' })
 
@@ -209,85 +213,90 @@ try {
   await preview.waitFor({ state: 'hidden' })
   await page.unroute('https://cdn.sanity.io/images/**', failPhoto)
 
-  assert.equal(await page.locator('#home .hero-product-main').count(), 1)
-  assert.equal(await page.locator('#home .hero-peek').count(), 2)
-  const heroProduct = page.locator('#home .hero-product-name')
-  assert.ok(
-    (await page.locator('.hero-product-caption').innerText()).includes(
-      menu.products[0].name,
-    ),
-  )
-  assert.ok(
-    (await page.locator('.hero-product-caption').innerText()).includes(
-      '5.5 JD',
-    ),
-  )
-  // Hero cards only display products; clicking them cannot navigate or order.
-  assert.equal(
-    await page.locator('.hero-carousel-stage a, .hero-carousel-stage button, .hero-carousel-stage [tabindex]').count(),
-    0,
-  )
-  const beforeHeroClick = page.url()
-  await page.locator('.hero-product-image').click()
-  await heroProduct.click()
-  await page.locator('.hero-peek').first().dispatchEvent('click')
-  assert.equal(page.url(), beforeHeroClick)
-  assert.equal(await heroProduct.innerText(), menu.products[0].name)
+  // Order directly from the details, keeping the menu and full box in sync.
+  const secondProduct = page.locator('.product-card').nth(1)
+  await secondProduct.locator('.quantity-label').click()
+  const titleTrigger = page.locator('.product-title-button').first()
+  await titleTrigger.click()
+  await preview.waitFor()
+  const modalIncrease = preview.getByRole('button', {
+    name: `زيادة كمية ${menu.products[0].name} في التفاصيل`, exact: true,
+  })
+  const modalDecrease = preview.getByRole('button', {
+    name: `تقليل كمية ${menu.products[0].name} في التفاصيل`, exact: true,
+  })
+  const modalQuantity = preview.locator('.product-preview-quantity output')
+  assert.equal(await modalDecrease.isDisabled(), true)
+  await preview.getByRole('button', { name: 'أضف إلى الصندوق', exact: true }).click()
+  assert.equal((await modalQuantity.textContent()).trim(), '1 في الصندوق')
+  assert.equal(await modalIncrease.evaluate((element) => element === document.activeElement), true)
+  await modalIncrease.click()
+  assert.equal((await modalQuantity.textContent()).trim(), '2 في الصندوق')
+  assert.equal(await page.locator('.product-card .quantity-label').first().locator('span').first().innerText(), '2')
+  assert.ok((await preview.locator('.product-preview-line-total').innerText()).includes('11 JD'))
+  const modalOrderUrl = new URL(await preview.locator('.product-preview-send').getAttribute('href'))
+  assert.equal(modalOrderUrl.pathname, '/962790000000')
+  assert.ok(modalOrderUrl.searchParams.get('text').includes('2 × 5.5 JD = 11 JD'))
+  assert.ok(modalOrderUrl.searchParams.get('text').includes(menu.products[1].name))
+  assert.ok(modalOrderUrl.searchParams.get('text').includes('المجموع: 16.5 JD'))
+  assert.equal(modalOrderUrl.href, await page.locator('.cart-send').getAttribute('href'))
+  // The WhatsApp link participates in the dialog's keyboard focus cycle.
+  await preview.locator('.product-preview-send').focus()
+  await page.keyboard.press('Tab')
+  assert.equal(await preview.getByRole('button', { name: 'رجوع للقائمة' }).evaluate((element) => element === document.activeElement), true)
+  await page.keyboard.press('Tab')
+  assert.equal(await preview.locator('.product-preview-close').evaluate((element) => element === document.activeElement), true)
+  await page.keyboard.press('Shift+Tab')
+  await page.keyboard.press('Shift+Tab')
+  assert.equal(await preview.locator('.product-preview-send').evaluate((element) => element === document.activeElement), true)
+  await modalDecrease.click()
+  await preview.getByRole('button', { name: 'رجوع للقائمة' }).click()
+  await preview.waitFor({ state: 'hidden' })
+  assert.equal(await titleTrigger.evaluate((element) => element === document.activeElement), true)
+  await previewTrigger.click()
+  await preview.waitFor()
+  assert.equal((await modalQuantity.textContent()).trim(), '1 في الصندوق')
+  await modalDecrease.click()
+  assert.equal(await modalDecrease.isDisabled(), true)
+  assert.equal(await preview.locator('.product-preview-send').count(), 0)
+  assert.equal(await preview.getByRole('button', { name: 'أضف إلى الصندوق' }).isEnabled(), true)
+  await page.keyboard.press('Escape')
+  await preview.waitFor({ state: 'hidden' })
+  await secondProduct.getByRole('button', { name: `تقليل كمية ${menu.products[1].name}`, exact: true }).click()
   assert.equal(await page.locator('.cart-bar').count(), 0)
-  await page.evaluate(() => window.scrollTo(0, 0))
-  // Every orderable product appears once before the shuffled carousel wraps.
-  const eligibleNames = menu.products
-    .filter((product) => product.available && !product.comingSoon)
-    .map((product) => product.name)
-  const carouselNames = new Set()
-  for (let index = 0; index < eligibleNames.length; index++) {
-    const previousName = await heroProduct.innerText()
-    carouselNames.add(previousName)
-    await page
-      .getByRole('button', { name: 'المنتج التالي', exact: true })
-      .click()
-    await page.waitForFunction((previous) => {
-      const name = document.querySelector('.hero-product-name')?.textContent
-      return name && name !== previous
-    }, previousName)
-  }
-  assert.deepEqual(carouselNames, new Set(eligibleNames))
-  assert.equal(await heroProduct.innerText(), menu.products[0].name)
-  // Keyboard navigation must keep focus on a control after replacing a slide.
-  const beforeKeyboard = await heroProduct.innerText()
-  await page.getByRole('button', { name: 'المنتج التالي', exact: true }).focus()
-  await page.keyboard.press('ArrowLeft')
-  await page.waitForFunction((before) => {
-    const name = document.querySelector('.hero-product-name')?.textContent
-    return name && name !== before
-  }, beforeKeyboard)
-  assert.equal(
-    await page.evaluate(() => document.activeElement?.getAttribute('aria-label')),
-    'المنتج التالي',
-  )
-  await page.keyboard.press('ArrowRight')
-  await page.waitForFunction((name) => {
-    return document.querySelector('.hero-product-name')?.textContent === name
-  }, menu.products[0].name)
 
-  // RTL swipe advances, and the previous button returns to the same product.
-  const stage = page.locator('.hero-carousel-stage')
-  await stage.dispatchEvent('pointerdown', {
-    clientX: 100,
-    clientY: 200,
-    pointerType: 'touch',
-  })
-  await stage.dispatchEvent('pointerup', {
-    clientX: 220,
-    clientY: 205,
-    pointerType: 'touch',
-  })
-  await page.waitForFunction((previous) => {
-    const name = document.querySelector('.hero-product-name')?.textContent
-    return name && name !== previous
-  }, menu.products[0].name)
-  assert.notEqual(await heroProduct.innerText(), menu.products[0].name)
-  await page.getByRole('button', { name: 'المنتج السابق', exact: true }).click()
+  const heroPhotos = page.locator('#home .hero-photo-card img')
+  assert.equal(await heroPhotos.count(), 3)
+  assert.equal(
+    new Set(await heroPhotos.evaluateAll((images) => images.map((image) => image.src))).size,
+    3,
+    'The hero shows three distinct bakery photos',
+  )
+  for (const photo of await heroPhotos.all()) {
+    assert.ok((await photo.getAttribute('alt')).length > 0)
+    await page.waitForFunction(
+      (image) => image.complete && image.naturalWidth > 0,
+      await photo.elementHandle(),
+    )
+  }
+  assert.equal(await page.locator('#home .hero-product-caption, #home .hero-carousel-controls').count(), 0)
+  for (const text of [
+    'خلايا حلوة ومالحة، مخبوزة على طلبك',
+    'test',
+    'اختار نكهتك، شكّل صندوقك، واطلب عبر واتساب.',
+    'شو نفسك اليوم؟',
+    'كل لفّة… نكهة بتحبّها',
+  ]) {
+    assert.ok(!(await page.locator('#home').innerText()).includes(text))
+  }
+  // The photo collage remains view-only; ordering stays in the menu.
+  assert.equal(await page.locator('.hero-photo-grid a, .hero-photo-grid button, .hero-photo-grid [tabindex]').count(), 0)
+  const beforeHeroClick = page.url()
+  await heroPhotos.first().click()
+  assert.equal(page.url(), beforeHeroClick)
+  assert.equal(await page.locator('.cart-bar').count(), 0)
+  await page.locator('.hero-actions a[href="#menu"]').click()
+  assert.equal(new URL(page.url()).hash, '#menu')
   // Ordering remains available from the menu.
   await page
     .locator('.product-card')
@@ -310,11 +319,6 @@ try {
     })
     .click()
   assert.equal(await page.locator('.cart-bar').count(), 0)
-  assert.equal(
-    await page.locator('.hero-carousel-play').count(),
-    0,
-    'Reduced motion disables automatic rotation',
-  )
   assert.equal(await page.locator('#about .value-card').count(), 3)
   assert.equal(
     await page.locator('#about h3').first().innerText(),
@@ -331,14 +335,10 @@ try {
     await page.locator('.announcement').innerText(),
     settings.announcement.text,
   )
-  assert.equal(
-    await page.locator('.hero-subline').innerText(),
-    settings.heroSubline,
-  )
+  assert.equal(await page.locator('.hero-subline').count(), 0)
   assert.equal(await page.locator('.bee-trail').count(), 0)
-  assert.ok(
-    await page.locator('.hero-actions a[href^="https://wa.me/"]').count(),
-  )
+  assert.equal(await page.locator('#home a[href^="https://wa.me/"]').count(), 0)
+  assert.equal(await page.locator('.header-order[href^="https://wa.me/"]').count(), 1)
 
   // Publishing a product must update an already open storefront without a reload.
   menu.products.push({
@@ -508,18 +508,31 @@ try {
       ),
       `Overflow at ${width}px`,
     )
-    const heroCard = await page.locator('.hero-product-main').boundingBox()
-    assert.ok(
-      heroCard.x >= 0 && heroCard.x + heroCard.width <= width,
-      `Hero product card fits at ${width}px`,
-    )
-    for (const button of await page.locator('.hero-carousel-arrow').all()) {
-      const box = await button.boundingBox()
+    for (const photo of await heroPhotos.all()) {
+      const bounds = await photo.boundingBox()
       assert.ok(
-        box.width >= 44 && box.height >= 44,
-        `Carousel control is easy to tap at ${width}px`,
+        bounds.x >= 0 && bounds.x + bounds.width <= width,
+        `Every hero photo fits at ${width}px`,
       )
     }
+    const brandName = page.locator('.mobile-brand-name')
+    assert.equal(await brandName.isVisible(), width < 768)
+    if (width < 768) {
+      assert.equal(await brandName.innerText(), 'BeeBites')
+      const logo = await page.locator('.site-header .brand-logo').boundingBox()
+      const name = await brandName.boundingBox()
+      assert.ok(name.x + name.width <= logo.x, 'The mobile wordmark sits beside the logo')
+    }
+    // The extra mobile branding must still leave room for cart/order/menu controls.
+    await first.getByRole('button', { name: 'زيادة كمية خلية شوكليت مكس', exact: true }).click()
+    await page.locator('.header-bag').waitFor()
+    const brand = await page.locator('.site-header .brand-link').boundingBox()
+    const controls = await page.locator('.header-order').locator('..').boundingBox()
+    assert.ok(brand.x >= controls.x + controls.width, `Header controls do not overlap the brand at ${width}px`)
+    assert.ok(controls.x >= 0 && brand.x + brand.width <= width, `Header fits with a filled cart at ${width}px`)
+    await first.getByRole('button', { name: 'تقليل كمية خلية شوكليت مكس', exact: true }).click()
+    await page.evaluate(() => window.scrollTo(0, 0))
+    await page.screenshot({ path: `test-results/hero-photos-${width}.png` })
     for (const colorScheme of ['light', 'dark']) {
       await page.emulateMedia({ colorScheme })
       await previewTrigger.click()
@@ -529,6 +542,15 @@ try {
       assert.ok(bounds.y >= 0 && bounds.y + bounds.height <= 900, 'Preview fits viewport height')
       assert.equal(await preview.evaluate((element) => element.scrollWidth <= element.clientWidth), true)
       await page.screenshot({ path: `test-results/product-preview-${width}-${colorScheme}.png` })
+      await preview.getByRole('button', { name: 'أضف إلى الصندوق', exact: true }).click()
+      await preview.locator('.product-preview-send[href^="https://wa.me/"]').waitFor()
+      assert.equal(await preview.evaluate((element) => element.scrollWidth <= element.clientWidth), true)
+      for (const control of await preview.locator('.product-preview-quantity button').all()) {
+        const box = await control.boundingBox()
+        assert.ok(box.width >= 44 && box.height >= 44, `Modal quantity controls are easy to tap at ${width}px`)
+      }
+      await page.screenshot({ path: `test-results/product-modal-order-${width}-${colorScheme}.png` })
+      await modalDecrease.click()
       await preview.getByRole('button', { name: 'رجوع للقائمة' }).click()
       await preview.waitFor({ state: 'hidden' })
     }
@@ -586,38 +608,25 @@ try {
   menu.products[0].description = originalDescription
   await page.setViewportSize({ width: 1440, height: 900 })
 
-  // Normal motion rotates the carousel; an explicit pause persists after blur.
+  // The three photos stay still with either motion preference and across CMS refreshes.
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.clock.install()
   await page.reload()
-  await page.locator('.hero-carousel-play').waitFor()
-  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }))
-  await page.mouse.move(1, 1)
-  const beforeRotation = await heroProduct.innerText()
-  await page.clock.runFor(6500)
-  await page.waitForFunction((before) => {
-    const name = document.querySelector('.hero-product-name')?.textContent
-    return name && name !== before
-  }, beforeRotation)
-  await page
-    .getByRole('button', { name: 'إيقاف عرض المنتجات مؤقتاً', exact: true })
-    .click()
-  await page.locator('#hero-title').click()
-  await page.mouse.move(1, 1)
-  const beforePause = await heroProduct.innerText()
+  await heroPhotos.first().waitFor()
+  const beforeRefresh = await heroPhotos.evaluateAll((images) => images.map((image) => image.alt))
   await page.clock.runFor(12000)
-  assert.equal(await heroProduct.innerText(), beforePause)
+  assert.deepEqual(await heroPhotos.evaluateAll((images) => images.map((image) => image.alt)), beforeRefresh)
+  assert.equal(await page.locator('#home button').count(), 0)
   await page.emulateMedia({ reducedMotion: 'reduce' })
 
   menu = { ...menu, products: [] }
   await page.reload()
-  await page.locator('.hero-products-empty').waitFor()
-  assert.equal(await page.locator('.hero-carousel-controls').count(), 0)
+  await page.locator('.empty-category').first().waitFor()
+  assert.equal(await heroPhotos.count(), 3)
   menu.products = [fallbackMenu.products[0]]
   await page.reload()
-  await page.locator('.hero-product-main:not(.skeleton-card)').waitFor()
-  assert.equal(await page.locator('.hero-carousel-controls').count(), 0)
-  assert.equal(await page.locator('.hero-peek').count(), 0)
+  await page.locator('.product-card').waitFor()
+  assert.equal(await heroPhotos.count(), 3)
 
   // A withdrawn cart item must not return merely because it is published again.
   await page.locator('.product-card .quantity-label').click()
@@ -653,10 +662,7 @@ try {
     JSON.stringify({ 'published-cart-product': 2 }),
   )
   assert.equal(await page.locator('.announcement').count(), 0)
-  assert.equal(
-    await page.locator('.hero-subline').innerText(),
-    fallbackSettings.heroSubline,
-  )
+  assert.equal(await page.locator('.hero-subline').count(), 0)
   assert.equal(await page.locator('.fab-link').isDisabled(), true)
   failCms = false
   await page.locator('.menu-notice button').click()
@@ -699,12 +705,16 @@ try {
   privatePage.on('pageerror', (error) => errors.push(error.message))
   await privatePage.goto(origin)
   await privatePage.locator('.product-card').first().waitFor()
-  await privatePage.locator('.product-card .quantity-label').tap()
+  await privatePage.locator('.product-card .product-image-wrap').first().tap()
+  await privatePage.locator('.product-preview[open]').waitFor()
+  await privatePage.getByRole('button', { name: 'أضف إلى الصندوق', exact: true }).tap()
+  await privatePage.locator('.product-preview-send[href^="https://wa.me/"]').waitFor()
+  await privatePage.getByRole('button', { name: 'رجوع للقائمة', exact: true }).tap()
   await privatePage.locator('.cart-bar').waitFor()
   await blockedStorage.close()
   assert.deepEqual(errors, [])
   console.log(
-    'Browser checks passed: CMS loading/fallback, Sanity CDN photos, product previews with keyboard focus/dismissal/image fallback/long content, shuffled carousel, swipe/arrow navigation, autoplay/pause/reduced motion, view-only hero cards, empty/single-product menus, cart persistence, WhatsApp orders, mobile touch, dialog focus, RTL/LTR, blocked storage, light/dark preferences and four viewport sizes.',
+    'Browser checks passed: CMS loading/fallback, Sanity CDN photos, product modal ordering/quantities/full-box WhatsApp messages/focus/dismissal/image fallback/long content, three-photo hero, mobile branding and filled-cart header, empty/single-product menus, cart persistence, mobile touch ordering from the modal, blocked storage, RTL/LTR, light/dark preferences and four viewport sizes.',
   )
 } finally {
   await browser?.close()
