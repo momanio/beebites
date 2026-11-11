@@ -51,7 +51,7 @@ function App() {
           </aside>
         )}
         <main id="main">
-          <Hero />
+          <Hero products={ready ? products : []} />
           <section
             id="menu"
             className="menu-section section-space"

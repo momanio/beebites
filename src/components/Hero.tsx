@@ -1,8 +1,9 @@
 import { HoneyDrips } from './HoneyDrips'
 import { HeroProducts } from './HeroProducts'
 import { Icon } from './Icon'
+import type { Product } from '../types/menu'
 
-export function Hero() {
+export function Hero({ products }: { products: Product[] }) {
   return (
     <section id="home" className="hero-section" aria-labelledby="hero-title">
       <HoneyDrips />
@@ -11,13 +12,7 @@ export function Hero() {
         BeeBites
       </h1>
       <div className="page-container hero-grid">
-        <HeroProducts />
-        <div className="hero-actions">
-          <a href="#menu" className="button button-chocolate">
-            شاهد القائمة
-            <Icon name="arrow" size={20} />
-          </a>
-        </div>
+        <HeroProducts products={products} />
       </div>
       <div className="hero-bottom-line" aria-hidden="true">
         <span />

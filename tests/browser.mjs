@@ -67,6 +67,8 @@ try {
   page.on('pageerror', (error) => errors.push(error.message))
   let failCms = false
   let menu = structuredClone(fallbackMenu)
+  menu.products[0].heroHighlight = 'featured'
+  menu.products[1].heroHighlight = 'trend'
   menu.products[0].description = 'عجينة هشة وطرية، محشية بالشوكليت ومخبوزة على طلبك.\nلقمة حلوة بتكمّل جمعتك.'
   menu.products[0].image = {
     _type: 'image',
@@ -266,37 +268,54 @@ try {
   assert.equal(await page.locator('.cart-bar').count(), 0)
 
   const heroPhotos = page.locator('#home .hero-photo-card img')
-  assert.equal(await heroPhotos.count(), 3)
-  assert.equal(
-    new Set(await heroPhotos.evaluateAll((images) => images.map((image) => image.src))).size,
-    3,
-    'The hero shows three distinct bakery photos',
-  )
-  for (const photo of await heroPhotos.all()) {
-    assert.ok((await photo.getAttribute('alt')).length > 0)
-    await page.waitForFunction(
-      (image) => image.complete && image.naturalWidth > 0,
-      await photo.elementHandle(),
-    )
+  const heroTitle = page.locator('#home .hero-product-caption h2')
+  const heroDots = page.locator('.hero-carousel-dots button')
+  const heroNext = page.getByRole('button', { name: 'المنتج التالي', exact: true })
+  const heroPrevious = page.getByRole('button', { name: 'المنتج السابق', exact: true })
+  assert.equal(await heroPhotos.count(), 1)
+  assert.equal(await heroDots.count(), 5)
+  assert.equal(await heroTitle.innerText(), menu.products[0].name)
+  assert.equal(await page.locator('.hero-product-description').innerText(), menu.products[0].description)
+  assert.equal(new URL(await heroPhotos.getAttribute('src')).origin, 'https://cdn.sanity.io')
+  assert.equal(new URL(await heroPhotos.getAttribute('src')).searchParams.get('fit'), 'max')
+  await page.waitForFunction((image) => image.complete && image.naturalWidth > 0, await heroPhotos.elementHandle())
+  const heroNames = await heroDots.evaluateAll((dots) => dots.map((dot) => dot.getAttribute('aria-label').replace('عرض ', '')))
+  assert.equal(new Set(heroNames).size, 5)
+  assert.deepEqual(heroNames.slice(0, 2), menu.products.slice(0, 2).map((product) => product.name))
+  for (let index = 0; index < 5; index++) {
+    await heroDots.nth(index).click()
+    assert.equal(await heroTitle.innerText(), heroNames[index])
+    assert.equal(await heroDots.nth(index).getAttribute('aria-current'), 'true')
+    assert.equal(await heroPhotos.count(), 1)
+    assert.ok((await page.locator('.hero-product-description').innerText()).length > 0)
   }
-  assert.equal(await page.locator('#home .hero-product-caption, #home .hero-carousel-controls').count(), 0)
-  for (const text of [
-    'خلايا حلوة ومالحة، مخبوزة على طلبك',
-    'test',
-    'اختار نكهتك، شكّل صندوقك، واطلب عبر واتساب.',
-    'شو نفسك اليوم؟',
-    'كل لفّة… نكهة بتحبّها',
-  ]) {
-    assert.ok(!(await page.locator('#home').innerText()).includes(text))
-  }
-  // The photo collage remains view-only; ordering stays in the menu.
-  assert.equal(await page.locator('.hero-photo-grid a, .hero-photo-grid button, .hero-photo-grid [tabindex]').count(), 0)
-  const beforeHeroClick = page.url()
-  await heroPhotos.first().click()
-  assert.equal(page.url(), beforeHeroClick)
+  await heroNext.click()
+  assert.equal(await heroTitle.innerText(), heroNames[0], 'Next wraps to the first product')
+  await heroPrevious.click()
+  assert.equal(await heroTitle.innerText(), heroNames[4], 'Previous wraps to the last product')
+  await page.locator('.hero-showcase').focus()
+  await page.keyboard.press('ArrowLeft')
+  assert.equal(await heroTitle.innerText(), heroNames[0])
+  await page.keyboard.press('ArrowRight')
+  assert.equal(await heroTitle.innerText(), heroNames[4])
+  await page.evaluate(() => { document.documentElement.dir = 'ltr' })
+  await page.keyboard.press('ArrowRight')
+  assert.equal(await heroTitle.innerText(), heroNames[0])
+  await page.evaluate(() => { document.documentElement.dir = 'rtl' })
+  const heroImageBounds = await heroPhotos.boundingBox()
+  const dragStartX = heroImageBounds.x + heroImageBounds.width / 2
+  const dragStartY = heroImageBounds.y + heroImageBounds.height / 2
+  await page.mouse.move(dragStartX, dragStartY)
+  await page.mouse.down()
+  await page.mouse.move(dragStartX + 110, dragStartY, { steps: 8 })
+  await page.mouse.up()
+  await page.waitForFunction((name) => document.querySelector('.hero-product-caption h2')?.textContent === name, heroNames[1])
+  await heroDots.first().click()
+  assert.equal(await page.locator('.hero-actions, #home a[href="#menu"]').count(), 0)
+  assert.ok(!(await page.locator('#home').innerText()).includes('شاهد القائمة'))
+  // Viewing or dragging a hero product leaves the cart unchanged.
+  await heroPhotos.click()
   assert.equal(await page.locator('.cart-bar').count(), 0)
-  await page.locator('.hero-actions a[href="#menu"]').click()
-  assert.equal(new URL(page.url()).hash, '#menu')
   // Ordering remains available from the menu.
   await page
     .locator('.product-card')
@@ -532,7 +551,7 @@ try {
     assert.ok(controls.x >= 0 && brand.x + brand.width <= width, `Header fits with a filled cart at ${width}px`)
     await first.getByRole('button', { name: 'تقليل كمية خلية شوكليت مكس', exact: true }).click()
     await page.evaluate(() => window.scrollTo(0, 0))
-    await page.screenshot({ path: `test-results/hero-photos-${width}.png` })
+    await page.screenshot({ path: `test-results/hero-slider-${width}.png` })
     for (const colorScheme of ['light', 'dark']) {
       await page.emulateMedia({ colorScheme })
       await previewTrigger.click()
@@ -608,25 +627,44 @@ try {
   menu.products[0].description = originalDescription
   await page.setViewportSize({ width: 1440, height: 900 })
 
-  // The three photos stay still with either motion preference and across CMS refreshes.
+  // Manual navigation stays put with either motion preference and across CMS refreshes.
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.clock.install()
   await page.reload()
-  await heroPhotos.first().waitFor()
-  const beforeRefresh = await heroPhotos.evaluateAll((images) => images.map((image) => image.alt))
+  await page.locator('.product-card').first().waitFor()
+  await heroNext.click()
+  const beforeRefresh = await heroTitle.innerText()
+  const beforeRefreshChoices = await heroDots.evaluateAll((dots) => dots.map((dot) => dot.getAttribute('aria-label')))
   await page.clock.runFor(12000)
-  assert.deepEqual(await heroPhotos.evaluateAll((images) => images.map((image) => image.alt)), beforeRefresh)
-  assert.equal(await page.locator('#home button').count(), 0)
+  assert.equal(await heroTitle.innerText(), beforeRefresh, 'There is no autoplay')
+  assert.deepEqual(await heroDots.evaluateAll((dots) => dots.map((dot) => dot.getAttribute('aria-label'))), beforeRefreshChoices)
   await page.emulateMedia({ reducedMotion: 'reduce' })
+
+  // Publishing different Featured/Trend choices updates the five-product selection.
+  const newHeroProducts = menu.products.filter((product) => product.available && !product.comingSoon).slice(-5)
+  for (const product of menu.products) product.heroHighlight = 'none'
+  for (const product of newHeroProducts) product.heroHighlight = 'trend'
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await page.waitForFunction((names) => {
+    const actual = [...document.querySelectorAll('.hero-carousel-dots button')].map((dot) => dot.getAttribute('aria-label').replace('عرض ', ''))
+    return actual.length === 5 && names.every((name) => actual.includes(name))
+  }, newHeroProducts.map((product) => product.name))
+  assert.equal(await heroDots.count(), 5)
+  const refreshedHeroTitle = await heroTitle.innerText()
+  assert.ok(newHeroProducts.some((product) => product.name === refreshedHeroTitle))
 
   menu = { ...menu, products: [] }
   await page.reload()
   await page.locator('.empty-category').first().waitFor()
-  assert.equal(await heroPhotos.count(), 3)
+  assert.equal(await heroPhotos.count(), 0)
+  assert.equal(await heroDots.count(), 0)
   menu.products = [fallbackMenu.products[0]]
   await page.reload()
   await page.locator('.product-card').waitFor()
-  assert.equal(await heroPhotos.count(), 3)
+  assert.equal(await heroPhotos.count(), 1)
+  assert.equal(await heroTitle.innerText(), menu.products[0].name)
+  assert.equal(await page.locator('.hero-carousel-controls').count(), 0)
+  assert.equal(await heroPhotos.getAttribute('src'), '/product-placeholder.svg')
 
   // A withdrawn cart item must not return merely because it is published again.
   await page.locator('.product-card .quantity-label').click()
@@ -656,6 +694,7 @@ try {
   await page.reload()
   await page.locator('.menu-notice').waitFor()
   assert.equal(await page.locator('.product-card').count(), 0)
+  assert.equal(await heroPhotos.count(), 0)
   assert.equal(await page.locator('.cart-bar').count(), 0)
   assert.equal(
     await page.evaluate(() => localStorage.getItem('beebites-cart-v1')),
@@ -692,12 +731,13 @@ try {
   })
   await blockedStorage.route('https://fonts.googleapis.com/**', (route) =>
     route.fulfill({ contentType: 'text/css', body: '' }))
+  const touchMenu = { ...fallbackMenu, products: fallbackMenu.products.filter((product) => product.available && !product.comingSoon) }
   await blockedStorage.route('**/api/sanity/**', (route) => {
     const query = new URL(route.request().url()).searchParams.get('query') || ''
     return route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({
-        result: query.includes('"categories"') ? menu : settings,
+        result: query.includes('"categories"') ? touchMenu : settings,
       }),
     })
   })
@@ -705,6 +745,26 @@ try {
   privatePage.on('pageerror', (error) => errors.push(error.message))
   await privatePage.goto(origin)
   await privatePage.locator('.product-card').first().waitFor()
+  const touchTitle = privatePage.locator('.hero-product-caption h2')
+  const touchNames = await privatePage.locator('.hero-carousel-dots button').evaluateAll((dots) => dots.map((dot) => dot.getAttribute('aria-label').replace('عرض ', '')))
+  const touchPhoto = await privatePage.locator('.hero-product-photo').boundingBox()
+  const touchX = touchPhoto.x + touchPhoto.width / 2
+  const touchY = touchPhoto.y + touchPhoto.height / 2
+  const touchSession = await blockedStorage.newCDPSession(privatePage)
+  async function swipeHero(distance) {
+    await touchSession.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: touchX, y: touchY }] })
+    for (let step = 1; step <= 6; step++) {
+      await touchSession.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: touchX + distance * step / 6, y: touchY }] })
+      await delay(20)
+    }
+    await touchSession.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  }
+  await swipeHero(100)
+  await privatePage.waitForFunction((name) => document.querySelector('.hero-product-caption h2')?.textContent === name, touchNames[1])
+  await swipeHero(-100)
+  await privatePage.waitForFunction((name) => document.querySelector('.hero-product-caption h2')?.textContent === name, touchNames[0])
+  assert.equal(await touchTitle.innerText(), touchNames[0])
+  assert.equal(await privatePage.locator('.cart-bar').count(), 0)
   await privatePage.locator('.product-card .product-image-wrap').first().tap()
   await privatePage.locator('.product-preview[open]').waitFor()
   await privatePage.getByRole('button', { name: 'أضف إلى الصندوق', exact: true }).tap()
@@ -714,7 +774,7 @@ try {
   await blockedStorage.close()
   assert.deepEqual(errors, [])
   console.log(
-    'Browser checks passed: CMS loading/fallback, Sanity CDN photos, product modal ordering/quantities/full-box WhatsApp messages/focus/dismissal/image fallback/long content, three-photo hero, mobile branding and filled-cart header, empty/single-product menus, cart persistence, mobile touch ordering from the modal, blocked storage, RTL/LTR, light/dark preferences and four viewport sizes.',
+    'Browser checks passed: CMS loading/fallback, Sanity CDN photos, product modal ordering/quantities/full-box WhatsApp messages/focus/dismissal/image fallback/long content, manual five-product hero, Featured/Trend updates, desktop drag and mobile swipes, mobile branding and filled-cart header, empty/single-product menus, cart persistence, mobile touch ordering from the modal, blocked storage, RTL/LTR, light/dark preferences and four viewport sizes.',
   )
 } finally {
   await browser?.close()

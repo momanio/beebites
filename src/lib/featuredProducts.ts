@@ -15,9 +15,15 @@ export function getFeaturedProducts(products: Product[], seed = 0): Product[] {
     candidates[swapIndex] = current
   }
 
-  return candidates.sort(
-    (a, b) =>
-      Number(Boolean(b.image?.asset?._ref)) -
-      Number(Boolean(a.image?.asset?._ref)),
-  )
+  const selected = candidates
+    .filter((product) =>
+      product.heroHighlight === 'featured' || product.heroHighlight === 'trend',
+    )
+    .sort((a, b) => a.order - b.order || a._id.localeCompare(b._id))
+  const selectedIds = new Set(selected.map((product) => product._id))
+
+  return [
+    ...selected,
+    ...candidates.filter((product) => !selectedIds.has(product._id)),
+  ].slice(0, 5)
 }

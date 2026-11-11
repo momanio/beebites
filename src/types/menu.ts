@@ -15,6 +15,7 @@ export interface Product {
   image?: SanityImage | null
   description?: string | null
   badge?: string | null
+  heroHighlight?: 'none' | 'featured' | 'trend' | null
   comingSoon: boolean
   available: boolean
   order: number

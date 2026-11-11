@@ -15,7 +15,7 @@ export const menuQuery = `{
   "products": *[_type == "product" && available != false] | order(order asc, name asc) {
     _id, name, subtitle, "categoryId": ${productCategoryExpression},
     "categoryTitle": category->title, price, image,
-    description, badge, "comingSoon": coalesce(comingSoon, false),
+    description, badge, heroHighlight, "comingSoon": coalesce(comingSoon, false),
     "available": coalesce(available, true), "order": coalesce(order, 0)
   }
 }`

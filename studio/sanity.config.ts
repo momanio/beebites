@@ -42,6 +42,14 @@ export default defineConfig({
                   .defaultOrdering([{ field: 'order', direction: 'asc' }]),
               ),
             S.listItem()
+              .title('منتجات الواجهة — Featured / Trend')
+              .child(
+                S.documentTypeList('product')
+                  .title('منتجات الواجهة — اختر خمسة')
+                  .filter('_type == "product" && heroHighlight in ["featured", "trend"]')
+                  .defaultOrdering([{ field: 'order', direction: 'asc' }]),
+              ),
+            S.listItem()
               .title('المنتجات حسب الأقسام')
               .child(
                 S.documentTypeList('category')

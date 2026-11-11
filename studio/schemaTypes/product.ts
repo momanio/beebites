@@ -52,6 +52,22 @@ export const product = defineType({
       rows: 3,
     }),
     defineField({
+      name: 'heroHighlight',
+      title: 'الظهور في الواجهة — Featured / Trend',
+      type: 'string',
+      initialValue: 'none',
+      options: {
+        list: [
+          { title: 'بدون تحديد', value: 'none' },
+          { title: 'Featured — مميز', value: 'featured' },
+          { title: 'Trend — رائج', value: 'trend' },
+        ],
+        layout: 'radio',
+      },
+      description:
+        'اختر Featured أو Trend في المنتجات الخمسة التي تريد عرضها ثم اضغط Publish. عند اختيار أقل من خمسة، تُكمّل الواجهة العدد بمنتجات عشوائية. عند اختيار أكثر من خمسة، تظهر الخمسة الأولى حسب ترتيب المنتج. المنتجات المخفية أو قريباً لا تظهر في الواجهة.',
+    }),
+    defineField({
       name: 'badge',
       title: 'شارة المنتج',
       type: 'string',
@@ -102,12 +118,14 @@ export const product = defineType({
       media: 'image',
       order: 'order',
       available: 'available',
+      heroHighlight: 'heroHighlight',
     },
-    prepare({ title, price, media, order, available }) {
+    prepare({ title, price, media, order, available, heroHighlight }) {
+      const highlight = heroHighlight === 'featured' ? ' · Featured' : heroHighlight === 'trend' ? ' · Trend' : ''
       return {
         title,
         media,
-        subtitle: `${order ?? '—'} · ${price ?? '—'} JD${available === false ? ' · مخفي' : ''}`,
+        subtitle: `${order ?? '—'} · ${price ?? '—'} JD${highlight}${available === false ? ' · مخفي' : ''}`,
       }
     },
   },
