@@ -1,3 +1,4 @@
+import { useLanguage } from '../hooks/useLanguage'
 import type { SiteSettings } from '../types/menu'
 import { Icon } from './Icon'
 import { WhatsAppLink } from './WhatsAppLink'
@@ -9,17 +10,18 @@ export function WhatsAppFab({
   settings: SiteSettings
   hasCart: boolean
 }) {
+  const { t } = useLanguage()
   return (
     <div className={`whatsapp-fab ${hasCart ? 'fab-with-cart' : ''}`}>
       <WhatsAppLink
         settings={settings}
         className="fab-link button-whatsapp"
-        label="تواصل معنا على واتساب"
+        label={t('تواصل معنا على واتساب')}
       >
         <Icon name="whatsapp" size={28} />
       </WhatsAppLink>
       <span className="fab-tooltip" aria-hidden="true">
-        نخبزلك شي حلو؟
+        {t('نخبزلك شي حلو؟')}
       </span>
     </div>
   )

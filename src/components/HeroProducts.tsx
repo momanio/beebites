@@ -1,9 +1,10 @@
-import { useId, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { getFeaturedProducts } from '../lib/featuredProducts'
 import { imageUrl } from '../lib/sanity'
 import type { Product } from '../types/menu'
 import { Icon } from './Icon'
+import { useLanguage } from '../hooks/useLanguage'
 
 type CarouselLanguage = 'ar' | 'en'
 
@@ -44,19 +45,6 @@ const translations = {
   },
 } as const
 
-function getLanguage(): CarouselLanguage {
-  return document.documentElement.lang.toLowerCase().startsWith('en') ? 'en' : 'ar'
-}
-
-function subscribeLanguage(onChange: () => void) {
-  const observer = new MutationObserver(onChange)
-  observer.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ['lang'],
-  })
-  return () => observer.disconnect()
-}
-
 function HeroPhoto({ product, language }: { product: Product; language: CarouselLanguage }) {
   const [failedSource, setFailedSource] = useState<string>()
   const source = imageUrl(product.image, 960, 'max')
@@ -93,7 +81,7 @@ export function HeroProducts({ products }: { products: Product[] }) {
   const showcase = useRef<HTMLDivElement>(null)
   const slideId = useId()
   const reducedMotion = useReducedMotion()
-  const language = useSyncExternalStore<CarouselLanguage>(subscribeLanguage, getLanguage, () => 'ar')
+  const { language } = useLanguage()
   const labels = translations[language]
   const activeIndex = Math.max(0, featured.findIndex((product) => product._id === selection.id))
   const product = featured[activeIndex]

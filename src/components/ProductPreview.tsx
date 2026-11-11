@@ -1,3 +1,4 @@
+import { useLanguage } from '../hooks/useLanguage'
 import { useEffect, useRef, useState } from 'react'
 import type { CartLine, Product, SiteSettings } from '../types/menu'
 import { MAX_QUANTITY } from '../lib/cart'
@@ -8,6 +9,7 @@ import { Icon } from './Icon'
 import { WhatsAppLink } from './WhatsAppLink'
 
 function PreviewPhoto({ product }: { product: Product }) {
+  const { t } = useLanguage()
   const source = imageUrl(product.image, 1280, 'max')
   const [failedSource, setFailedSource] = useState<string>()
   const [loadedSource, setLoadedSource] = useState<string>()
@@ -24,7 +26,7 @@ function PreviewPhoto({ product }: { product: Product }) {
             : undefined
         }
         sizes="(min-width: 700px) 440px, 90vw"
-        alt={hasImage ? product.name : `صورة توضيحية مؤقتة — ${product.name}`}
+        alt={hasImage ? product.name : t('صورة توضيحية مؤقتة — {name}', { name: product.name })}
         decoding="async"
         onLoad={() => setLoadedSource(source)}
         onError={() => setFailedSource(source)}
@@ -32,10 +34,10 @@ function PreviewPhoto({ product }: { product: Product }) {
       {loading && (
         <span className="product-preview-loading" role="status">
           <Icon name="wheat" size={28} />
-          جارٍ تحميل الصورة…
+          {t('جارٍ تحميل الصورة…')}
         </span>
       )}
-      {!hasImage && <span className="product-preview-placeholder">صورة المنتج قريباً</span>}
+      {!hasImage && <span className="product-preview-placeholder">{t('صورة المنتج قريباً')}</span>}
     </div>
   )
 }
@@ -57,6 +59,7 @@ export function ProductPreview({
   onQuantityChange: (id: string, change: number) => void
   onClose: () => void
 }) {
+  const { t, language } = useLanguage()
   const dialog = useRef<HTMLDialogElement>(null)
   const increase = useRef<HTMLButtonElement>(null)
 
@@ -117,7 +120,7 @@ export function ProductPreview({
             <button
               type="button"
               className="product-preview-close"
-              aria-label="إغلاق تفاصيل المنتج"
+              aria-label={t('إغلاق تفاصيل المنتج')}
               onClick={close}
             >
               <Icon name="close" size={20} />
@@ -128,17 +131,17 @@ export function ProductPreview({
               <span className="product-preview-orbit" aria-hidden="true" />
               <PreviewPhoto key={product._id} product={product} />
               <span className="product-preview-seal" aria-hidden="true">
-                <Icon name="heart" size={18} /> مخبوزة بحب
+                <Icon name="heart" size={18} /> {t('مخبوزة بحب')}
               </span>
             </div>
             <div className="product-preview-copy">
               <p className="eyebrow product-preview-eyebrow">
                 <Icon name="sparkles" size={17} />
-                {product.categoryTitle || 'من فرن بي بايتس'}
+                {product.categoryTitle || t('من فرن بي بايتس')}
               </p>
               {product.comingSoon || product.badge ? (
                 <span className="product-preview-badge">
-                  {product.comingSoon ? 'قريباً… استنّونا' : product.badge}
+                  {product.comingSoon ? t('قريباً… استنّونا') : product.badge}
                 </span>
               ) : null}
               <h2 id="product-preview-title" dir="auto">
@@ -153,36 +156,36 @@ export function ProductPreview({
                 <span />
               </div>
               <p id="product-preview-description" className="product-preview-description" dir="auto">
-                {product.description || 'تفاصيل هالنكهة بنشاركها معك قريباً.'}
+                {product.description || t('تفاصيل هالنكهة بنشاركها معك قريباً.')}
               </p>
               <div className="product-preview-footer">
                 <div className="product-preview-price">
-                  <span>السعر</span>
+                  <span>{t('السعر')}</span>
                   <bdi>{formatPrice(product.price)}</bdi>
                 </div>
                 {!product.comingSoon && (
                   <div
                     className="quantity-control product-preview-quantity"
                     role="group"
-                    aria-label={`كمية ${product.name} في الصندوق`}
+                    aria-label={t('كمية {name} في الصندوق', { name: product.name })}
                   >
                     <button
                       ref={increase}
                       type="button"
                       disabled={orderingDisabled || quantity >= MAX_QUANTITY}
-                      aria-label={`زيادة كمية ${product.name} في التفاصيل`}
+                      aria-label={t('زيادة كمية {name} في التفاصيل', { name: product.name })}
                       onClick={() => onQuantityChange(product._id, 1)}
                     >
                       <Icon name="plus" size={18} />
                     </button>
                     <output aria-live="polite" aria-atomic="true">
                       {quantity}
-                      <span className="sr-only"> في الصندوق</span>
+                      <span className="sr-only">{t(' في الصندوق')}</span>
                     </output>
                     <button
                       type="button"
                       disabled={orderingDisabled || quantity === 0}
-                      aria-label={`تقليل كمية ${product.name} في التفاصيل`}
+                      aria-label={t('تقليل كمية {name} في التفاصيل', { name: product.name })}
                       onClick={() => onQuantityChange(product._id, -1)}
                     >
                       <Icon name="minus" size={18} />
@@ -191,23 +194,23 @@ export function ProductPreview({
                 )}
                 {!product.comingSoon && quantity > 0 && (
                   <p className="product-preview-line-total">
-                    <span>{quantity} في صندوقك · مجموع الصنف</span>
+                    <span>{t('{count} في صندوقك · مجموع الصنف', { count: quantity })}</span>
                     <bdi>{formatPrice(product.price * quantity)}</bdi>
                   </p>
                 )}
                 <div className="product-preview-actions">
                   {product.comingSoon ? (
                     <button type="button" className="button button-chocolate" disabled>
-                      قريباً… استنّونا
+                      {t('قريباً… استنّونا')}
                     </button>
                   ) : quantity > 0 ? (
                     <WhatsAppLink
                       settings={settings}
-                      message={buildOrderMessage(lines)}
+                      message={buildOrderMessage(lines, language)}
                       className="button button-chocolate product-preview-send"
                     >
                       <Icon name="whatsapp" size={18} />
-                      أرسل الطلب عبر واتساب
+                      {t('أرسل الطلب عبر واتساب')}
                     </WhatsAppLink>
                   ) : (
                     <button
@@ -220,11 +223,11 @@ export function ProductPreview({
                       }}
                     >
                       <Icon name="bag" size={18} />
-                      أضف إلى الصندوق
+                      {t('أضف إلى الصندوق')}
                     </button>
                   )}
                   <button type="button" className="button button-outline" onClick={close}>
-                    رجوع للقائمة <Icon name="arrow" size={18} />
+                    {t('رجوع للقائمة')} <Icon name="arrow" size={18} />
                   </button>
                 </div>
               </div>

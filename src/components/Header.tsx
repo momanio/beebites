@@ -1,14 +1,16 @@
+import { useLanguage } from '../hooks/useLanguage'
 import { useEffect, useRef, useState } from 'react'
 import type { SiteSettings } from '../types/menu'
 import { BrandLogo } from './BrandLogo'
 import { Icon } from './Icon'
+import { LanguageSwitch } from './LanguageSwitch'
 import { WhatsAppLink } from './WhatsAppLink'
 
 const links = [
   { href: '#menu', label: 'القائمة' },
   { href: '#about', label: 'من نحن' },
   { href: '#contact', label: 'تواصل معنا' },
-]
+] as const
 
 export function Header({
   settings,
@@ -17,6 +19,7 @@ export function Header({
   settings: SiteSettings
   count: number
 }) {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const toggle = useRef<HTMLButtonElement>(null)
   const header = useRef<HTMLElement>(null)
@@ -62,7 +65,7 @@ export function Header({
         <a
           href="#home"
           className="brand-link"
-          aria-label="بي بايتس — الصفحة الرئيسية"
+          aria-label={t('بي بايتس — الصفحة الرئيسية')}
           onClick={() => setOpen(false)}
         >
           <BrandLogo logo={settings.logo} />
@@ -70,19 +73,20 @@ export function Header({
             BeeBites
           </span>
         </a>
-        <nav className="desktop-nav" aria-label="القائمة الرئيسية">
+        <nav className="desktop-nav" aria-label={t('القائمة الرئيسية')}>
           {links.map((link) => (
             <a key={link.href} href={link.href}>
-              {link.label}
+              {t(link.label)}
             </a>
           ))}
         </nav>
         <div className="flex items-center gap-2 md:gap-4">
+          <LanguageSwitch className="desktop-language-switch" />
           {count > 0 && (
             <a
               className="header-bag"
               href="#cart"
-              aria-label={`سلتك: ${count} قطع`}
+              aria-label={t('سلتك: {count} قطع', { count })}
             >
               <Icon name="bag" size={21} />
               <span>{count}</span>
@@ -95,13 +99,13 @@ export function Header({
             <span className="header-order-icon" aria-hidden="true">
               <Icon name="whatsapp" size={18} />
             </span>
-            <span>اطلب الآن</span>
+            <span>{t('اطلب الآن')}</span>
           </WhatsAppLink>
           <button
             ref={toggle}
             type="button"
             className="icon-button mobile-toggle"
-            aria-label={open ? 'إغلاق القائمة' : 'فتح القائمة'}
+            aria-label={open ? t('إغلاق القائمة') : t('فتح القائمة')}
             aria-expanded={open}
             aria-controls="mobile-navigation"
             onClick={() => setOpen(!open)}
@@ -113,15 +117,16 @@ export function Header({
       <nav
         id="mobile-navigation"
         className="mobile-nav"
-        aria-label="قائمة الجوال"
+        aria-label={t('قائمة الجوال')}
         hidden={!open}
       >
         {links.map((link) => (
           <a key={link.href} href={link.href} onClick={() => setOpen(false)}>
-            {link.label}
+            {t(link.label)}
             <Icon name="arrow" size={18} />
           </a>
         ))}
+        <LanguageSwitch className="mobile-language-switch" />
       </nav>
     </header>
   )

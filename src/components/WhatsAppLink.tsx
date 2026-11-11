@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useLanguage } from '../hooks/useLanguage'
 import type { SiteSettings } from '../types/menu'
 import { whatsappUrl } from '../lib/whatsapp'
 
@@ -17,6 +18,7 @@ export function WhatsAppLink({
   className = '',
   label,
 }: WhatsAppLinkProps) {
+  const { t } = useLanguage()
   const href = whatsappUrl(
     settings.whatsappNumber,
     message ?? settings.defaultWhatsappMessage,
@@ -28,9 +30,9 @@ export function WhatsAppLink({
         className={className}
         disabled
         aria-label={
-          label ? `${label} — الطلب عبر واتساب متاح قريباً` : undefined
+          label ? `${label} — ${t('الطلب عبر واتساب متاح قريباً')}` : undefined
         }
-        title="الطلب عبر واتساب متاح قريباً"
+        title={t('الطلب عبر واتساب متاح قريباً')}
       >
         {children}
       </button>

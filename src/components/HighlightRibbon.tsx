@@ -1,10 +1,12 @@
+import { useLanguage } from '../hooks/useLanguage'
 import type { SiteSettings } from '../types/menu'
 import { Icon } from './Icon'
 
 export function HighlightRibbon({ settings }: { settings: SiteSettings }) {
+  const { t } = useLanguage()
   if (!settings.highlightTitle && !settings.highlightText) return null
   return (
-    <aside className="highlight-ribbon" aria-label="سر طراوة بي بايتس">
+    <aside className="highlight-ribbon" aria-label={t('سر طراوة بي بايتس')}>
       <div className="ribbon-inner page-container">
         <Icon name="wheat" className="ribbon-wheat" size={42} />
         <div>

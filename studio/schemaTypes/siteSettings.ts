@@ -15,8 +15,17 @@ export const siteSettings = defineType({
     { name: 'hero', title: 'الواجهة', default: true },
     { name: 'orders', title: 'الطلبات والتواصل' },
     { name: 'about', title: 'من نحن' },
+    { name: 'english', title: 'English translations' },
   ],
   fields: [
+    ...[
+      { name: 'heroSloganEn', title: 'English slogan', type: 'string' },
+      { name: 'heroSublineEn', title: 'English subline', type: 'string' },
+      { name: 'highlightTitleEn', title: 'English ribbon heading', type: 'string' },
+      { name: 'highlightTextEn', title: 'English ribbon details', type: 'text' },
+      { name: 'defaultWhatsappMessageEn', title: 'English WhatsApp greeting', type: 'text' },
+      { name: 'orderNoteEn', title: 'English ordering note', type: 'text' },
+    ].map((field) => defineField({ ...field, group: 'english', description: 'Optional English translation. The Arabic text is preserved.' })),
     defineField({
       name: 'heroSlogan',
       title: 'الشعار الرئيسي',
@@ -57,6 +66,7 @@ export const siteSettings = defineType({
       type: 'object',
       group: 'hero',
       fields: [
+        defineField({ name: 'textEn', title: 'English announcement', type: 'string' }),
         defineField({
           name: 'enabled',
           title: 'إظهار الإعلان',

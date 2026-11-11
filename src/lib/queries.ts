@@ -9,13 +9,13 @@ export const productCategoryExpression = `select(
 
 export const menuQuery = `{
   "categories": *[_type == "category"] | order(order asc, title asc) {
-    _id, title, "slug": slug.current, "order": coalesce(order, 0),
+    _id, title, titleEn, "slug": slug.current, "order": coalesce(order, 0),
     "parentId": parent._ref
   },
   "products": *[_type == "product" && available != false] | order(order asc, name asc) {
-    _id, name, subtitle, "categoryId": ${productCategoryExpression},
+    _id, name, nameEn, subtitle, subtitleEn, "categoryId": ${productCategoryExpression},
     "categoryTitle": category->title, price, image,
-    description, badge, heroHighlight, "comingSoon": coalesce(comingSoon, false),
+    description, descriptionEn, badge, badgeEn, heroHighlight, "comingSoon": coalesce(comingSoon, false),
     "available": coalesce(available, true), "order": coalesce(order, 0)
   }
 }`
@@ -23,5 +23,6 @@ export const menuQuery = `{
 export const settingsQuery = `*[_type == "siteSettings" && _id == "siteSettings"][0] {
   whatsappNumber, defaultWhatsappMessage, heroSlogan, heroSubline,
   highlightTitle, highlightText, orderNote, instagramUrl, facebookUrl,
-  announcement, logo
+  defaultWhatsappMessageEn, heroSloganEn, heroSublineEn,
+  highlightTitleEn, highlightTextEn, orderNoteEn, announcement, logo
 }`

@@ -1,3 +1,4 @@
+import { useLanguage } from '../hooks/useLanguage'
 import type { Category, Product } from '../types/menu'
 import type { Quantities } from '../lib/cart'
 import { ProductCard } from './ProductCard'
@@ -25,6 +26,7 @@ export function MenuSection({
   onPreview: (id: string) => void
   subcategory?: boolean
 }) {
+  const { t } = useLanguage()
   const children = subcategory
     ? []
     : categories.filter((item) => item.parentId === category._id)
@@ -47,7 +49,7 @@ export function MenuSection({
         <SectionTitle title={category.title} id={`title-${category._id}`} />
       )}
       {children.length > 0 && (
-        <nav className="subcategory-nav" aria-label={`أقسام ${category.title}`}>
+        <nav className="subcategory-nav" aria-label={t('أقسام {name}', { name: category.title })}>
           {children.map((child) => (
             <a
               className="category-chip"
@@ -75,7 +77,7 @@ export function MenuSection({
           ))}
         </div>
       ) : children.length === 0 ? (
-        <p className="empty-category">مذاقات جديدة بالطريق… ترقّبوا جديدنا!</p>
+        <p className="empty-category">{t('مذاقات جديدة بالطريق… ترقّبوا جديدنا!')}</p>
       ) : null}
       {children.map((child) => (
         <MenuSection
@@ -96,9 +98,10 @@ export function MenuSection({
 }
 
 export function MenuSkeleton() {
+  const { t } = useLanguage()
   return (
-    <div role="status" aria-label="جارٍ تحميل القائمة">
-      <span className="sr-only">جارٍ تحميل القائمة</span>
+    <div role="status" aria-label={t('جارٍ تحميل القائمة')}>
+      <span className="sr-only">{t('جارٍ تحميل القائمة')}</span>
       <div className="grid grid-cols-2 gap-5 md:grid-cols-3 xl:grid-cols-5">
         {Array.from({ length: 10 }, (_, index) => (
           <div className="skeleton-card" key={index} aria-hidden="true">

@@ -4,6 +4,7 @@ export const product = defineType({
   name: 'product',
   title: 'المنتجات',
   type: 'document',
+  fieldsets: [{ name: 'english', title: 'English translations — الترجمة الإنجليزية', options: { collapsible: true, collapsed: false } }],
   fields: [
     defineField({
       name: 'name',
@@ -11,6 +12,12 @@ export const product = defineType({
       type: 'string',
       validation: (rule) => rule.required(),
     }),
+    ...[
+      { name: 'nameEn', title: 'English product name', type: 'string' },
+      { name: 'subtitleEn', title: 'English short description', type: 'string' },
+      { name: 'descriptionEn', title: 'English product description', type: 'text', rows: 3 },
+      { name: 'badgeEn', title: 'English badge', type: 'string' },
+    ].map((field) => defineField({ ...field, fieldset: 'english', description: 'اختياري. تظهر هذه الترجمة عند اختيار English في الموقع، ويُحفظ النص العربي كما هو.' })),
     defineField({
       name: 'subtitle',
       title: 'وصف قصير',

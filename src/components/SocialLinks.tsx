@@ -1,3 +1,4 @@
+import { useLanguage } from '../hooks/useLanguage'
 import type { SiteSettings } from '../types/menu'
 import { safeSocialUrl } from '../lib/whatsapp'
 import { Icon } from './Icon'
@@ -9,6 +10,7 @@ export function SocialLinks({
   settings: SiteSettings
   compact?: boolean
 }) {
+  const { t } = useLanguage()
   const instagram = safeSocialUrl(settings.instagramUrl)
   const facebook = safeSocialUrl(settings.facebookUrl)
   return (
@@ -18,10 +20,10 @@ export function SocialLinks({
           href={instagram}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="بي بايتس على إنستغرام"
+          aria-label={t('بي بايتس على إنستغرام')}
         >
           <Icon name="instagram" size={21} />
-          {!compact && <span>إنستغرام</span>}
+          {!compact && <span>{t('إنستغرام')}</span>}
         </a>
       )}
       {facebook && (
@@ -29,10 +31,10 @@ export function SocialLinks({
           href={facebook}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="بي بايتس على فيسبوك"
+          aria-label={t('بي بايتس على فيسبوك')}
         >
           <Icon name="facebook" size={20} />
-          {!compact && <span>فيسبوك</span>}
+          {!compact && <span>{t('فيسبوك')}</span>}
         </a>
       )}
     </div>

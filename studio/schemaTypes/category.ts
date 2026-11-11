@@ -12,6 +12,12 @@ export const category = defineType({
       validation: (rule) => rule.required(),
     }),
     defineField({
+      name: 'titleEn',
+      title: 'English category name — اسم القسم بالإنجليزية',
+      type: 'string',
+      description: 'اختياري. اكتب اسم القسم بالإنجليزية ثم اضغط Publish.',
+    }),
+    defineField({
       name: 'slug',
       title: 'رابط القسم',
       type: 'slug',

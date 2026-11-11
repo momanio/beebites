@@ -1,3 +1,4 @@
+import { useLanguage } from '../hooks/useLanguage'
 import { useState } from 'react'
 import type { Product } from '../types/menu'
 import { imageUrl } from '../lib/sanity'
@@ -18,6 +19,7 @@ export function ProductCard({
   onQuantityChange,
   onPreview,
 }: ProductCardProps) {
+  const { t } = useLanguage()
   const [failedSource, setFailedSource] = useState<string>()
   const source = imageUrl(product.image, 640)
   const hasImage = source && source !== failedSource
@@ -32,7 +34,7 @@ export function ProductCard({
       <button
         type="button"
         className="product-image-wrap"
-        aria-label={`عرض تفاصيل ${product.name}`}
+        aria-label={t('عرض تفاصيل {name}', { name: product.name })}
         aria-haspopup="dialog"
         onClick={() => onPreview(product._id)}
       >
@@ -45,7 +47,7 @@ export function ProductCard({
               : undefined
           }
           sizes="(min-width: 1200px) 220px, (min-width: 768px) 30vw, 46vw"
-          alt={hasImage ? product.name : `صورة توضيحية مؤقتة — ${product.name}`}
+          alt={hasImage ? product.name : t('صورة توضيحية مؤقتة — {name}', { name: product.name })}
           width="640"
           height="640"
           loading="lazy"
@@ -55,20 +57,20 @@ export function ProductCard({
           }}
         />
         {!hasImage && (
-          <span className="placeholder-caption">صورة المنتج قريباً</span>
+          <span className="placeholder-caption">{t('صورة المنتج قريباً')}</span>
         )}
         {(product.badge || product.comingSoon) && (
-          <span className="product-badge">{product.badge || 'قريباً'}</span>
+          <span className="product-badge">{product.badge || t('قريباً')}</span>
         )}
         {quantity > 0 && (
-          <span className="selected-count" aria-label={`${quantity} في سلتك`}>
+          <span className="selected-count" aria-label={t('{count} في سلتك', { count: quantity })}>
             {quantity}
           </span>
         )}
         <span className="card-honey-drip" aria-hidden="true" />
         <span className="product-preview-hint" aria-hidden="true">
           <Icon name="expand" size={14} />
-          نظرة أقرب
+          {t('نظرة أقرب')}
         </span>
       </button>
       <div className="product-copy">
@@ -89,18 +91,18 @@ export function ProductCard({
         <PriceTag price={product.price} />
         {product.comingSoon ? (
           <button className="coming-soon-button" disabled type="button">
-            قريباً… استنّونا
+            {t('قريباً… استنّونا')}
           </button>
         ) : (
           <div
             className="quantity-control"
             role="group"
-            aria-label={`كمية ${product.name}`}
+            aria-label={t('كمية {name}', { name: product.name })}
           >
             <button
               type="button"
               disabled={quantity >= MAX_QUANTITY}
-              aria-label={`زيادة كمية ${product.name}`}
+              aria-label={t('زيادة كمية {name}', { name: product.name })}
               onClick={() => onQuantityChange(product._id, 1)}
             >
               <Icon name="plus" size={16} />
@@ -109,17 +111,17 @@ export function ProductCard({
               type="button"
               className="quantity-label"
               disabled={quantity >= MAX_QUANTITY}
-              aria-label={`اطلب ${product.name}، الكمية الحالية ${quantity}`}
+              aria-label={t('اطلب {name}، الكمية الحالية {count}', { name: product.name, count: quantity })}
               onClick={() => onQuantityChange(product._id, 1)}
             >
               {quantity > 0 ? (
                 <>
                   <span>{quantity}</span>
-                  <span className="sr-only">في السلة</span>
+                  <span className="sr-only">{t('في السلة')}</span>
                 </>
               ) : (
                 <>
-                  اطلب
+                  {t('اطلب')}
                   <Icon name="bag" size={14} />
                 </>
               )}
@@ -127,7 +129,7 @@ export function ProductCard({
             <button
               type="button"
               disabled={quantity === 0}
-              aria-label={`تقليل كمية ${product.name}`}
+              aria-label={t('تقليل كمية {name}', { name: product.name })}
               onClick={() => onQuantityChange(product._id, -1)}
             >
               <Icon name="minus" size={16} />

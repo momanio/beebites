@@ -85,6 +85,8 @@ try {
     highlightText: 'testing',
     heroSlogan: 'BeeBites',
     heroSubline: 'test',
+    defaultWhatsappMessageEn: 'Hello BeeBites! I would like to order.',
+    orderNoteEn: 'Please order a day ahead.',
     announcement: { enabled: true, text: 'إعلان تجريبي من الاستوديو' },
     aboutCards: [
       { _key: 'cms-only', title: 'نص من الاستوديو', text: 'لا يظهر في الموقع' },
@@ -327,13 +329,15 @@ try {
   const englishNext = page.getByRole('button', { name: 'Next', exact: true })
   const englishPrevious = page.getByRole('button', { name: 'Previous', exact: true })
   await englishNext.waitFor()
+  const englishHeroNames = await heroDots.evaluateAll((dots) => dots.map((dot) => dot.getAttribute('aria-label').replace('View ', '')))
+  assert.equal(englishHeroNames[0], 'Mixed Chocolate Honeycomb')
   await page.keyboard.press('ArrowRight')
-  assert.equal(await heroTitle.innerText(), heroNames[0])
+  assert.equal(await heroTitle.innerText(), englishHeroNames[0])
   assert.equal(await englishNext.locator('svg').evaluate((element) => getComputedStyle(element).rotate), '180deg')
   assert.equal(await englishPrevious.locator('svg').evaluate((element) => getComputedStyle(element).rotate), 'none')
   assert.ok((await englishNext.boundingBox()).x > (await englishPrevious.boundingBox()).x, 'LTR next sits on the right')
   await page.keyboard.press('ArrowLeft')
-  assert.equal(await heroTitle.innerText(), heroNames[4])
+  assert.equal(await heroTitle.innerText(), englishHeroNames[4])
   await page.evaluate(() => {
     document.documentElement.dir = 'rtl'
     document.documentElement.lang = 'ar'
@@ -843,6 +847,63 @@ try {
     'menu-title',
     'Retry keeps keyboard focus in the menu after removing the notice',
   )
+  // A full language switch translates the storefront and keeps the existing box.
+  await page.setViewportSize({ width: 1280, height: 900 })
+  menu.products[0].nameEn = 'English pastry from Studio'
+  menu.products[0].descriptionEn = 'An English product description from Studio.'
+  menu.categories.find((category) => category._id === 'category-sweet').titleEn = 'Sweet favourites'
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await delay(450)
+  const savedCartBeforeLanguage = await page.evaluate(() => localStorage.getItem('beebites-cart-v1'))
+  await page.getByRole('button', { name: 'Switch to English', exact: true }).click()
+  await page.getByRole('heading', { name: 'The BeeBites menu', exact: true }).waitFor()
+  assert.equal(await page.locator('html').getAttribute('dir'), 'ltr')
+  assert.equal(await page.locator('html').getAttribute('lang'), 'en')
+  assert.equal(await page.locator('#about h2').innerText(), 'Why BeeBites?')
+  assert.equal(await page.locator('#about h3').first().innerText(), 'Soft as a cloud')
+  assert.equal(await page.locator('.product-card h3').innerText(), 'English pastry from Studio')
+  assert.equal(await page.locator('.subcategory-title').first().innerText(), 'Sweet favourites')
+  assert.equal(await page.locator('.order-note p').innerText(), 'Please order a day ahead.')
+  assert.equal(await page.evaluate(() => localStorage.getItem('beebites-cart-v1')), savedCartBeforeLanguage)
+  assert.ok((await page.locator('.cart-summary').innerText()).includes('2 items'))
+  const englishOrder = new URL(await page.locator('.cart-send').getAttribute('href')).searchParams.get('text')
+  assert.ok(englishOrder.startsWith('My BeeBites order'))
+  assert.ok(englishOrder.includes('English pastry from Studio'))
+  assert.ok(englishOrder.includes('Total: 11 JD'))
+  assert.ok((await page.title()).includes('BeeBites |'))
+  assert.equal(await page.locator('meta[property="og:locale"]').getAttribute('content'), 'en_JO')
+  await previewTrigger.click()
+  await preview.waitFor()
+  assert.equal(await preview.locator('h2').innerText(), 'English pastry from Studio')
+  assert.equal(await preview.locator('.product-preview-description').innerText(), 'An English product description from Studio.')
+  await preview.getByRole('button', { name: 'Increase quantity of English pastry from Studio in details', exact: true }).click()
+  await preview.getByRole('button', { name: 'Decrease quantity of English pastry from Studio in details', exact: true }).click()
+  await preview.getByRole('button', { name: 'Back to menu', exact: true }).click()
+  for (const width of [320, 360, 390, 768, 1280]) {
+    await page.setViewportSize({ width, height: 900 })
+    await page.evaluate(() => window.scrollTo(0, 0))
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `English layout fits at ${width}px`)
+    const brandBounds = await page.locator('.site-header .brand-link').boundingBox()
+    const actionBounds = await page.locator('.header-order').locator('..').boundingBox()
+    assert.ok(brandBounds.x + brandBounds.width <= actionBounds.x, `English header controls fit with a full box at ${width}px`)
+    await page.screenshot({ path: `test-results/english-${width}.png` })
+  }
+  await page.reload()
+  await page.getByRole('heading', { name: 'The BeeBites menu', exact: true }).waitFor()
+  await page.locator('.cart-bar').waitFor()
+  assert.equal(await page.locator('html').getAttribute('lang'), 'en', 'Language choice survives reload')
+  await page.setViewportSize({ width: 390, height: 900 })
+  await page.getByRole('button', { name: 'Open menu', exact: true }).click()
+  await page.getByRole('button', { name: 'التبديل إلى العربية', exact: true }).click()
+  await page.getByRole('heading', { name: 'قائمة بي بايتس', exact: true }).waitFor()
+  assert.equal(await page.locator('html').getAttribute('dir'), 'rtl')
+  assert.equal(await page.evaluate(() => localStorage.getItem('beebites-cart-v1')), savedCartBeforeLanguage)
+  await page.getByRole('button', { name: 'Switch to English', exact: true }).click()
+  await page.getByRole('button', { name: 'Close menu', exact: true }).click()
+  await page.goto(`${origin}/?lang=ar`)
+  await page.getByRole('heading', { name: 'قائمة بي بايتس', exact: true }).waitFor()
+  assert.equal(await page.locator('html').getAttribute('dir'), 'rtl', 'An explicit language link overrides the stored preference')
+
   // Denied localStorage must not prevent selecting products.
   const blockedStorage = await browser.newContext({
     reducedMotion: 'reduce',
@@ -901,10 +962,11 @@ try {
     document.documentElement.dir = 'ltr'
   })
   await privatePage.getByRole('button', { name: 'Next', exact: true }).waitFor()
+  const englishTouchNames = await privatePage.locator('.hero-carousel-dots button').evaluateAll((dots) => dots.map((dot) => dot.getAttribute('aria-label').replace('View ', '')))
   await swipeHero(-100)
-  await privatePage.waitForFunction((name) => document.querySelector('.hero-product-caption h2')?.textContent === name, touchNames[1])
+  await privatePage.waitForFunction((name) => document.querySelector('.hero-product-caption h2')?.textContent === name, englishTouchNames[1])
   await swipeHero(100)
-  await privatePage.waitForFunction((name) => document.querySelector('.hero-product-caption h2')?.textContent === name, touchNames[0])
+  await privatePage.waitForFunction((name) => document.querySelector('.hero-product-caption h2')?.textContent === name, englishTouchNames[0])
   await privatePage.evaluate(() => {
     document.documentElement.lang = 'ar'
     document.documentElement.dir = 'rtl'

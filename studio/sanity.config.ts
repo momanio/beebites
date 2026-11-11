@@ -81,6 +81,9 @@ export default defineConfig({
                   ),
               ),
             S.listItem()
+              .title('نصوص الموقع — عربي / English')
+              .child(S.document().schemaType('siteSettings').documentId('siteSettings')),
+            S.listItem()
               .title('إدارة الأقسام')
               .child(
                 S.documentTypeList('category')

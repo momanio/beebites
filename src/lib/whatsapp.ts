@@ -1,4 +1,5 @@
 import type { CartLine } from '../types/menu'
+import type { Language } from './i18n.ts'
 import { formatPrice, roundMoney } from './formatPrice.ts'
 
 export function whatsappUrl(number: string, message: string): string | null {
@@ -8,19 +9,19 @@ export function whatsappUrl(number: string, message: string): string | null {
   return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`
 }
 
-export function buildOrderMessage(lines: CartLine[]): string {
+export function buildOrderMessage(lines: CartLine[], language: Language = 'ar'): string {
   const total = roundMoney(lines.reduce((sum, line) => sum + line.lineTotal, 0))
   const items = lines.map(
     ({ product, quantity, lineTotal }) =>
       `• ${product.name}${product.subtitle ? ` ${product.subtitle}` : ''}\n  ${quantity} × ${formatPrice(product.price)} = ${formatPrice(lineTotal)}`,
   )
   return [
-    'طلبي من BeeBites 🐝',
+    language === 'en' ? 'My BeeBites order 🐝' : 'طلبي من BeeBites 🐝',
     ...items,
     '',
-    `المجموع: ${formatPrice(total)}`,
+    `${language === 'en' ? 'Total' : 'المجموع'}: ${formatPrice(total)}`,
     '',
-    'ممكن تأكيد توفر الطلب وموعد الاستلام؟',
+    language === 'en' ? 'Could you confirm availability and pickup time?' : 'ممكن تأكيد توفر الطلب وموعد الاستلام؟',
   ].join('\n')
 }
 
