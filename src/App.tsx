@@ -12,6 +12,7 @@ import { ProductPreview } from './components/ProductPreview'
 import { Seo } from './components/Seo'
 import { SocialSection } from './components/SocialSection'
 import { WhatsAppFab } from './components/WhatsAppFab'
+import { useActiveCategory } from './hooks/useActiveCategory'
 import { useCart } from './hooks/useCart'
 import { useMenu } from './hooks/useMenu'
 import { useSiteSettings } from './hooks/useSiteSettings'
@@ -29,6 +30,9 @@ function App() {
   const cart = useCart(products, loading || !ready)
   const hasCart = ready && !loading && cart.count > 0
   const mainCategories = ready ? rootCategories(categories) : []
+  const { activeCategoryId, selectCategory } = useActiveCategory(categories, ready && !loading)
+  const activeCategory = categories.find((category) => category._id === activeCategoryId)
+  const activeMainCategoryId = activeCategory?.parentId || activeCategory?._id || mainCategories[0]?._id
 
   function retryMenu() {
     menuTitle.current?.focus({ preventScroll: true })
@@ -98,6 +102,8 @@ function App() {
                     key={category._id}
                     href={`#category-${category._id}`}
                     className="category-chip"
+                    aria-current={category._id === activeMainCategoryId ? 'location' : undefined}
+                    onClick={() => selectCategory(category._id)}
                   >
                     <Icon name="hexagon" size={16} />
                     {category.title}
@@ -118,6 +124,8 @@ function App() {
                     category={category}
                     categories={categories}
                     products={products}
+                    activeCategoryId={activeCategoryId}
+                    onCategorySelect={selectCategory}
                     quantities={cart.quantities}
                     onQuantityChange={cart.changeQuantity}
                     onPreview={setPreviewId}

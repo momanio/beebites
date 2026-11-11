@@ -5,6 +5,7 @@ type IconName =
   | 'instagram'
   | 'facebook'
   | 'arrow'
+  | 'chevron'
   | 'bag'
   | 'heart'
   | 'wheat'
@@ -39,6 +40,7 @@ const paths: Record<IconName, ReactNode> = {
     <path d="M14.5 22v-9H18l.5-4h-4V6.5c0-1.1.3-1.7 2-1.7H19V1.2C18.5 1.1 17.1 1 15.6 1 12.3 1 10 3 10 6.6V9H7v4h3v9" />
   ),
   arrow: <path d="m10 6-6 6 6 6M4 12h16" />,
+  chevron: <path d="m14 6-6 6 6 6" />,
   bag: (
     <>
       <path d="M5 8h14l1 13H4L5 8Z" />

@@ -8,6 +8,8 @@ export function MenuSection({
   category,
   categories,
   products,
+  activeCategoryId,
+  onCategorySelect,
   quantities,
   onQuantityChange,
   onPreview,
@@ -16,6 +18,8 @@ export function MenuSection({
   category: Category
   categories: Category[]
   products: Product[]
+  activeCategoryId: string | null
+  onCategorySelect: (id: string) => void
   quantities: Quantities
   onQuantityChange: (id: string, change: number) => void
   onPreview: (id: string) => void
@@ -49,6 +53,8 @@ export function MenuSection({
               className="category-chip"
               key={child._id}
               href={`#category-${child._id}`}
+              aria-current={child._id === activeCategoryId ? 'location' : undefined}
+              onClick={() => onCategorySelect(child._id)}
             >
               {child.title}
             </a>
@@ -77,6 +83,8 @@ export function MenuSection({
           category={child}
           categories={categories}
           products={products}
+          activeCategoryId={activeCategoryId}
+          onCategorySelect={onCategorySelect}
           quantities={quantities}
           onQuantityChange={onQuantityChange}
           onPreview={onPreview}

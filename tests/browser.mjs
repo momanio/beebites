@@ -270,8 +270,8 @@ try {
   const heroPhotos = page.locator('#home .hero-photo-card img')
   const heroTitle = page.locator('#home .hero-product-caption h2')
   const heroDots = page.locator('.hero-carousel-dots button')
-  const heroNext = page.getByRole('button', { name: 'المنتج التالي', exact: true })
-  const heroPrevious = page.getByRole('button', { name: 'المنتج السابق', exact: true })
+  const heroNext = page.getByRole('button', { name: 'التالي', exact: true })
+  const heroPrevious = page.getByRole('button', { name: 'السابق', exact: true })
   assert.equal(await heroPhotos.count(), 1)
   assert.equal(await heroDots.count(), 5)
   assert.equal(await heroTitle.innerText(), menu.products[0].name)
@@ -282,6 +282,23 @@ try {
   const heroNames = await heroDots.evaluateAll((dots) => dots.map((dot) => dot.getAttribute('aria-label').replace('عرض ', '')))
   assert.equal(new Set(heroNames).size, 5)
   assert.deepEqual(heroNames.slice(0, 2), menu.products.slice(0, 2).map((product) => product.name))
+  assert.equal(await page.locator('.hero-slide-counter').count(), 0)
+  assert.equal(await page.locator('.hero-carousel-hint').getAttribute('aria-hidden'), 'false')
+  assert.equal(await page.locator('.hero-product-caption').getAttribute('aria-live'), 'polite')
+  assert.equal(await heroNext.getAttribute('aria-controls'), await page.locator('.hero-product-slide').getAttribute('id'))
+  assert.equal(await heroPrevious.getAttribute('aria-controls'), await heroNext.getAttribute('aria-controls'))
+  assert.ok((await heroNext.getAttribute('title')).includes(heroNames[1]))
+  await heroNext.focus()
+  await page.keyboard.press('Enter')
+  assert.equal(await heroTitle.innerText(), heroNames[1])
+  assert.equal(await heroNext.evaluate((element) => element === document.activeElement), true, 'The image arrow keeps keyboard focus after navigation')
+  await page.keyboard.press('Enter')
+  assert.equal(await heroTitle.innerText(), heroNames[2])
+  assert.equal(await page.locator('.hero-carousel-hint').getAttribute('aria-hidden'), 'true')
+  await page.waitForFunction(() => getComputedStyle(document.querySelector('.hero-carousel-hint')).opacity === '0')
+  assert.equal(await heroNext.evaluate((element) => getComputedStyle(element).outlineWidth), '2px')
+  assert.equal(await heroNext.evaluate((element) => getComputedStyle(element).outlineOffset), '3px')
+  assert.equal(await heroNext.evaluate((element) => getComputedStyle(element).scale), 'none', 'Reduced motion avoids button scaling')
   for (let index = 0; index < 5; index++) {
     await heroDots.nth(index).click()
     assert.equal(await heroTitle.innerText(), heroNames[index])
@@ -298,10 +315,31 @@ try {
   assert.equal(await heroTitle.innerText(), heroNames[0])
   await page.keyboard.press('ArrowRight')
   assert.equal(await heroTitle.innerText(), heroNames[4])
-  await page.evaluate(() => { document.documentElement.dir = 'ltr' })
+  assert.equal(await heroPrevious.locator('svg').evaluate((element) => getComputedStyle(element).rotate), '180deg')
+  assert.equal(await heroNext.locator('svg').evaluate((element) => getComputedStyle(element).rotate), 'none')
+  const rtlNextBounds = await heroNext.boundingBox()
+  const rtlPreviousBounds = await heroPrevious.boundingBox()
+  assert.ok(rtlNextBounds.x < rtlPreviousBounds.x, 'RTL next sits on the left')
+  await page.evaluate(() => {
+    document.documentElement.dir = 'ltr'
+    document.documentElement.lang = 'en'
+  })
+  const englishNext = page.getByRole('button', { name: 'Next', exact: true })
+  const englishPrevious = page.getByRole('button', { name: 'Previous', exact: true })
+  await englishNext.waitFor()
   await page.keyboard.press('ArrowRight')
   assert.equal(await heroTitle.innerText(), heroNames[0])
-  await page.evaluate(() => { document.documentElement.dir = 'rtl' })
+  assert.equal(await englishNext.locator('svg').evaluate((element) => getComputedStyle(element).rotate), '180deg')
+  assert.equal(await englishPrevious.locator('svg').evaluate((element) => getComputedStyle(element).rotate), 'none')
+  assert.ok((await englishNext.boundingBox()).x > (await englishPrevious.boundingBox()).x, 'LTR next sits on the right')
+  await page.keyboard.press('ArrowLeft')
+  assert.equal(await heroTitle.innerText(), heroNames[4])
+  await page.evaluate(() => {
+    document.documentElement.dir = 'rtl'
+    document.documentElement.lang = 'ar'
+  })
+  await heroNext.waitFor()
+  await heroNext.click()
   const heroImageBounds = await heroPhotos.boundingBox()
   const dragStartX = heroImageBounds.x + heroImageBounds.width / 2
   const dragStartY = heroImageBounds.y + heroImageBounds.height / 2
@@ -455,6 +493,68 @@ try {
     document.querySelectorAll('.category-nav .category-chip').length === 2,
   )
 
+  // Category highlights follow clicks, keyboard navigation and the visible section.
+  const currentMainCategory = page.locator('.category-nav .category-chip[aria-current="location"]')
+  const newCategoryLink = page.locator('.category-nav a[href="#category-category-new"]')
+  const cellsCategoryLink = page.locator('.category-nav a[href="#category-category-cells"]')
+  const sweetCategoryLink = page.locator('.subcategory-nav a[href="#category-category-sweet"]')
+  const savoryCategoryLink = page.locator('.subcategory-nav a[href="#category-category-savory"]')
+  async function trackCategoryHighlights(link) {
+    await link.evaluate((element) => {
+      element.addEventListener('click', () => {
+        window.categoryHighlightHistory = []
+        window.categoryHighlightObserver = new MutationObserver((records) => {
+          for (const record of records) {
+            const button = record.target
+            if (button.matches('.category-nav .category-chip[aria-current="location"]'))
+              window.categoryHighlightHistory.push(button.getAttribute('href'))
+          }
+        })
+        window.categoryHighlightObserver.observe(document.querySelector('.category-nav'), {
+          attributes: true,
+          subtree: true,
+          attributeFilter: ['aria-current'],
+        })
+      }, { once: true })
+    })
+  }
+  async function stopTrackingCategoryHighlights() {
+    await delay(250)
+    return page.evaluate(() => {
+      window.categoryHighlightObserver.disconnect()
+      return [...new Set(window.categoryHighlightHistory)]
+    })
+  }
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await trackCategoryHighlights(cellsCategoryLink)
+  await cellsCategoryLink.click()
+  await page.waitForFunction(() => {
+    const section = document.getElementById('category-category-cells')
+    const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)
+    return Math.abs(section.getBoundingClientRect().top - padding) < 2
+  })
+  assert.equal(await cellsCategoryLink.getAttribute('aria-current'), 'location')
+  assert.equal(await currentMainCategory.count(), 1)
+  assert.deepEqual((await stopTrackingCategoryHighlights()).filter((href) => href !== '#category-category-cells'), [], 'Smooth navigation must not flash another category as selected')
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await savoryCategoryLink.click()
+  await page.waitForFunction(() => document.querySelector('.subcategory-nav a[href="#category-category-savory"]')?.getAttribute('aria-current') === 'location')
+  assert.equal(await cellsCategoryLink.getAttribute('aria-current'), 'location', 'A selected subcategory also highlights its parent')
+  await page.locator('#category-category-sweet').evaluate((section) => {
+    const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)
+    const margin = parseFloat(getComputedStyle(section).scrollMarginBlockStart)
+    window.scrollTo(0, window.scrollY + section.getBoundingClientRect().top - padding - margin)
+  })
+  await page.waitForFunction(() => document.querySelector('.subcategory-nav a[href="#category-category-sweet"]')?.getAttribute('aria-current') === 'location')
+  assert.equal(await sweetCategoryLink.getAttribute('aria-current'), 'location')
+  assert.equal(await savoryCategoryLink.getAttribute('aria-current'), null)
+  await newCategoryLink.focus()
+  await page.keyboard.press('Enter')
+  await page.waitForFunction(() => document.querySelector('.category-nav a[href="#category-category-new"]')?.getAttribute('aria-current') === 'location')
+  await newCategoryLink.evaluate((element) => element.blur())
+  assert.equal(await newCategoryLink.getAttribute('aria-current'), 'location', 'The highlight remains after focus leaves the button')
+  assert.equal(await currentMainCategory.count(), 1)
+
   const first = page.locator('.product-card').first()
   await first
     .getByRole('button', { name: 'زيادة كمية خلية شوكليت مكس', exact: true })
@@ -518,7 +618,7 @@ try {
   await mkdir('test-results', { recursive: true })
   await page.evaluate(() => window.scrollTo(0, 0))
   await page.screenshot({ path: 'test-results/desktop.png', fullPage: true })
-  for (const width of [320, 390, 768, 1440]) {
+  for (const width of [320, 360, 390, 768, 1280, 1440]) {
     await page.setViewportSize({ width, height: 900 })
     await page.evaluate(() => window.scrollTo(0, 0))
     assert.ok(
@@ -533,6 +633,19 @@ try {
         bounds.x >= 0 && bounds.x + bounds.width <= width,
         `Every hero photo fits at ${width}px`,
       )
+      for (const arrow of [heroPrevious, heroNext]) {
+        const control = await arrow.boundingBox()
+        assert.ok(control.x + control.width <= bounds.x || control.x >= bounds.x + bounds.width, `Hero controls never cover the product photo at ${width}px`)
+        assert.ok(Math.abs(control.y + control.height / 2 - bounds.y - bounds.height / 2) < 3, `Hero controls are centered beside the photo at ${width}px`)
+        assert.equal(await arrow.evaluate((element) => element.firstElementChild.offsetWidth), width < 768 ? 36 : width < 1024 ? 44 : 48, `The visible button has the requested size at ${width}px`)
+        if (control.x < 0 || control.x + control.width > width) await page.screenshot({ path: `test-results/carousel-overflow-${width}.png` })
+        assert.ok(control.x >= 0 && control.x + control.width <= width, `Hero arrows stay inside the viewport at ${width}px: ${JSON.stringify(control)}`)
+        assert.ok(control.width >= 44 && control.height >= 44, 'Hero arrows are easy to tap')
+        assert.equal(await arrow.evaluate((element) => {
+          const bounds = element.getBoundingClientRect()
+          return element.contains(document.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2))
+        }), true, 'Image navigation remains clickable beside the photo')
+      }
     }
     const brandName = page.locator('.mobile-brand-name')
     assert.equal(await brandName.isVisible(), width < 768)
@@ -581,6 +694,21 @@ try {
       await page.keyboard.press('Escape')
       assert.equal(await page.locator('#mobile-navigation').isVisible(), false)
       await page.locator('.category-chip').last().click()
+      await page.waitForFunction(() => document.querySelector('.subcategory-nav a[href="#category-category-savory"]')?.getAttribute('aria-current') === 'location')
+      assert.equal(await cellsCategoryLink.getAttribute('aria-current'), 'location')
+      if (width === 390) {
+        await page.emulateMedia({ reducedMotion: 'no-preference' })
+        await trackCategoryHighlights(newCategoryLink)
+        await newCategoryLink.click()
+        await page.waitForFunction(() => {
+          const section = document.getElementById('category-category-new')
+          const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)
+          return Math.abs(section.getBoundingClientRect().top - padding) < 2
+        })
+        assert.deepEqual((await stopTrackingCategoryHighlights()).filter((href) => href !== '#category-category-new'), [], 'Mobile navigation must keep the clicked category highlighted throughout the scroll')
+        assert.equal(await newCategoryLink.getAttribute('aria-current'), 'location')
+        await page.emulateMedia({ reducedMotion: 'reduce' })
+      }
       const top = await page
         .locator('.category-nav')
         .evaluate((element) => element.getBoundingClientRect().top)
@@ -747,6 +875,10 @@ try {
   await privatePage.locator('.product-card').first().waitFor()
   const touchTitle = privatePage.locator('.hero-product-caption h2')
   const touchNames = await privatePage.locator('.hero-carousel-dots button').evaluateAll((dots) => dots.map((dot) => dot.getAttribute('aria-label').replace('عرض ', '')))
+  await privatePage.getByRole('button', { name: 'التالي', exact: true }).tap()
+  assert.equal(await touchTitle.innerText(), touchNames[1])
+  await privatePage.getByRole('button', { name: 'السابق', exact: true }).tap()
+  assert.equal(await touchTitle.innerText(), touchNames[0])
   const touchPhoto = await privatePage.locator('.hero-product-photo').boundingBox()
   const touchX = touchPhoto.x + touchPhoto.width / 2
   const touchY = touchPhoto.y + touchPhoto.height / 2
@@ -764,6 +896,19 @@ try {
   await swipeHero(-100)
   await privatePage.waitForFunction((name) => document.querySelector('.hero-product-caption h2')?.textContent === name, touchNames[0])
   assert.equal(await touchTitle.innerText(), touchNames[0])
+  await privatePage.evaluate(() => {
+    document.documentElement.lang = 'en'
+    document.documentElement.dir = 'ltr'
+  })
+  await privatePage.getByRole('button', { name: 'Next', exact: true }).waitFor()
+  await swipeHero(-100)
+  await privatePage.waitForFunction((name) => document.querySelector('.hero-product-caption h2')?.textContent === name, touchNames[1])
+  await swipeHero(100)
+  await privatePage.waitForFunction((name) => document.querySelector('.hero-product-caption h2')?.textContent === name, touchNames[0])
+  await privatePage.evaluate(() => {
+    document.documentElement.lang = 'ar'
+    document.documentElement.dir = 'rtl'
+  })
   assert.equal(await privatePage.locator('.cart-bar').count(), 0)
   await privatePage.locator('.product-card .product-image-wrap').first().tap()
   await privatePage.locator('.product-preview[open]').waitFor()
@@ -774,7 +919,7 @@ try {
   await blockedStorage.close()
   assert.deepEqual(errors, [])
   console.log(
-    'Browser checks passed: CMS loading/fallback, Sanity CDN photos, product modal ordering/quantities/full-box WhatsApp messages/focus/dismissal/image fallback/long content, manual five-product hero, Featured/Trend updates, desktop drag and mobile swipes, mobile branding and filled-cart header, empty/single-product menus, cart persistence, mobile touch ordering from the modal, blocked storage, RTL/LTR, light/dark preferences and four viewport sizes.',
+    'Browser checks passed: CMS loading/fallback, Sanity CDN photos, product modal ordering/quantities/full-box WhatsApp messages/focus/dismissal/image fallback/long content, manual five-product hero, Featured/Trend updates, desktop drag and mobile swipes, mobile branding and filled-cart header, empty/single-product menus, cart persistence, mobile touch ordering from the modal, blocked storage, RTL/LTR, light/dark preferences, translated RTL/LTR carousel controls, unobstructed photos and six viewport sizes.',
   )
 } finally {
   await browser?.close()
