@@ -2,6 +2,8 @@
   "name": "beebites-studio",
   "private": true,
   "version": "1.0.0",
+  "author": "Omar Momani",
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "dev": "sanity dev",

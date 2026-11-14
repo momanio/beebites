@@ -2,6 +2,8 @@
   "name": "beebites",
   "private": true,
   "version": "0.0.0",
+  "author": "Omar Momani",
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "dev": "vite",
