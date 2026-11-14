@@ -39,15 +39,11 @@ export function MenuSection({
       className={`category-section${subcategory ? ' subcategory-section' : ''}`}
       aria-labelledby={`title-${category._id}`}
     >
-      {subcategory ? (
-        <h3 className="subcategory-title" id={`title-${category._id}`}>
-          <span />
-          {category.title}
-          <span />
-        </h3>
-      ) : (
-        <SectionTitle title={category.title} id={`title-${category._id}`} />
-      )}
+      <SectionTitle
+        title={category.title}
+        id={`title-${category._id}`}
+        subcategory={subcategory}
+      />
       {children.length > 0 && (
         <nav className="subcategory-nav" aria-label={t('أقسام {name}', { name: category.title })}>
           {children.map((child) => (

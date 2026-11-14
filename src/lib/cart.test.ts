@@ -87,16 +87,19 @@ test('prices omit trailing zeros and preserve half-dinar prices', () => {
   assert.equal(formatPrice(12.25), '12.25 JD')
 })
 
-test('WhatsApp message includes names, subtitles, quantities, line totals and grand total', () => {
+test('WhatsApp message includes names, quantities and totals without product details', () => {
   const lines = getCartLines(
     { 'product-chocolate-mix': 2, 'product-honey': 1 },
     fallbackMenu.products,
   )
   const message = buildOrderMessage(lines)
   assert.ok(message.startsWith('طلبي من BeeBites 🐝\n'))
-  assert.ok(message.includes('خلية شوكليت مكس (وايت & عادي)'))
-  assert.ok(message.includes('2 × 5.5 JD = 11 JD'))
-  assert.ok(message.includes('1 × 6 JD = 6 JD'))
+  assert.ok(message.includes('• خلية شوكليت مكس  عدد 2\n  السعر = 11 JD'))
+  assert.ok(message.includes('• كلاسيك مع عسل  عدد 1\n  السعر = 6 JD'))
+  for (const { product } of lines) {
+    if (product.subtitle) assert.ok(!message.includes(product.subtitle))
+    if (product.description) assert.ok(!message.includes(product.description))
+  }
   assert.ok(message.includes('المجموع: 17 JD'))
   const url = whatsappUrl('+962 790 000 000', message)
   assert.ok(url)

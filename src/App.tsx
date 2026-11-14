@@ -76,10 +76,6 @@ function App() {
                   {t('قائمة بي بايتس')}
                 </h2>
               </div>
-              <p className="menu-helper">
-                <Icon name="bag" size={20} />
-                <span>{t('شكّل صندوقك… والباقي علينا')}</span>
-              </p>
             </div>
             {error && (
               <div className="page-container">
@@ -157,6 +153,7 @@ function App() {
         <Footer settings={settings} />
         <ProductPreview
           product={previewProduct}
+          category={categories.find((category) => category._id === previewProduct?.categoryId)}
           quantity={cart.lines.find((line) => line.product._id === previewId)?.quantity ?? 0}
           lines={cart.lines}
           settings={settings}

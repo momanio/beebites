@@ -5,7 +5,6 @@ const english = {
   'إعلان بي بايتس': 'BeeBites announcement',
   'اختار حلا جمعتك': 'Something sweet to share',
   'قائمة بي بايتس': 'The BeeBites menu',
-  'شكّل صندوقك… والباقي علينا': 'Build your box. We’ll do the baking.',
   'ما قدرنا نحدّث القائمة الآن. آخر قائمة محمّلة ما زالت معروضة.': 'We couldn’t refresh the menu. Your last loaded menu is still available.',
   'ما قدرنا نحمّل القائمة الآن. صندوقك محفوظ؛ جرّب مرة ثانية.': 'We couldn’t load the menu. Your box is saved; please try again.',
   'حاول مرة ثانية': 'Try again',

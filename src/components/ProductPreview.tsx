@@ -1,11 +1,13 @@
 import { useLanguage } from '../hooks/useLanguage'
 import { useEffect, useRef, useState } from 'react'
-import type { CartLine, Product, SiteSettings } from '../types/menu'
+import type { CartLine, Category, Product, SiteSettings } from '../types/menu'
 import { MAX_QUANTITY } from '../lib/cart'
 import { imageUrl } from '../lib/sanity'
 import { formatPrice } from '../lib/formatPrice'
 import { buildOrderMessage } from '../lib/whatsapp'
+import { BrandLogo } from './BrandLogo'
 import { Icon } from './Icon'
+import { SectionTitle } from './SectionTitle'
 import { WhatsAppLink } from './WhatsAppLink'
 
 function PreviewPhoto({ product }: { product: Product }) {
@@ -38,12 +40,18 @@ function PreviewPhoto({ product }: { product: Product }) {
         </span>
       )}
       {!hasImage && <span className="product-preview-placeholder">{t('صورة المنتج قريباً')}</span>}
+      {(product.comingSoon || product.badge) && (
+        <span className="product-badge product-preview-badge">
+          {product.comingSoon ? t('قريباً… استنّونا') : product.badge}
+        </span>
+      )}
     </div>
   )
 }
 
 export function ProductPreview({
   product,
+  category,
   quantity,
   lines,
   settings,
@@ -52,6 +60,7 @@ export function ProductPreview({
   onClose,
 }: {
   product: Product | undefined
+  category: Category | undefined
   quantity: number
   lines: CartLine[]
   settings: SiteSettings
@@ -114,8 +123,8 @@ export function ProductPreview({
       {product && (
         <>
           <div className="product-preview-header">
-            <span className="product-preview-brand" lang="en">
-              <Icon name="wheat" size={19} /> BeeBites
+            <span className="product-preview-brand">
+              <BrandLogo logo={settings.logo} />
             </span>
             <button
               type="button"
@@ -135,15 +144,12 @@ export function ProductPreview({
               </span>
             </div>
             <div className="product-preview-copy">
-              <p className="eyebrow product-preview-eyebrow">
-                <Icon name="sparkles" size={17} />
-                {product.categoryTitle || t('من فرن بي بايتس')}
-              </p>
-              {product.comingSoon || product.badge ? (
-                <span className="product-preview-badge">
-                  {product.comingSoon ? t('قريباً… استنّونا') : product.badge}
-                </span>
-              ) : null}
+              <div className="product-preview-category">
+                <SectionTitle
+                  title={category?.title || product.categoryTitle || t('من فرن بي بايتس')}
+                  as="p"
+                />
+              </div>
               <h2 id="product-preview-title" dir="auto">
                 {product.name}
               </h2>
