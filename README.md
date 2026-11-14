@@ -2,6 +2,12 @@
 
 Arabic-first, RTL home bakery storefront built with React 19, TypeScript 6, Vite 8, Tailwind CSS 4 and Motion. Sanity manages the menu and site settings. Orders are composed locally and sent through WhatsApp; there is no payment or checkout service.
 
+## License
+
+Copyright (c) 2026 Omar Momani. All rights reserved.
+
+BeeBites is proprietary. Use, copying, modification, redistribution, hosting, deployment, and reuse of the project or its theme require Omar Momani's prior written permission, subject to applicable law. This applies to commercial and noncommercial use. See [LICENSE](./LICENSE) for the full terms, including third-party exclusions.
+
 ## Run locally
 
 Use Node.js 22.12+ and npm. TypeScript and ESLint retain the repository's original versions.
