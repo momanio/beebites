@@ -52,6 +52,34 @@ test('a product can appear in its primary and additional categories only once pe
   assert.equal(productInCategory(menu.products[0], 'category-sweet'), false)
 })
 
+test('a new coffee product belongs to New and the Coffee parent, but not its subcategory', () => {
+  const categories = [
+    { _id: 'new', title: 'جديد', slug: 'new', order: 1 },
+    { _id: 'coffee', title: 'قهوة', slug: 'coffee', order: 2 },
+    {
+      _id: 'iced-coffee',
+      title: 'قهوة باردة',
+      slug: 'iced-coffee',
+      order: 1,
+      parentId: 'coffee',
+    },
+  ]
+  const product = {
+    ...fallbackMenu.products[0],
+    name: 'قهوة جديدة',
+    categoryId: 'new',
+    additionalCategoryIds: ['coffee'],
+  }
+  const menu = resolveMenu({ categories, products: [product] })
+  assert.deepEqual(
+    rootCategories(menu.categories).map((category) => category.title),
+    ['جديد', 'قهوة'],
+  )
+  assert.equal(productInCategory(menu.products[0], 'new'), true)
+  assert.equal(productInCategory(menu.products[0], 'coffee'), true)
+  assert.equal(productInCategory(menu.products[0], 'iced-coffee'), false)
+})
+
 test('جديدنا stays first regardless of display order, including reused category IDs', () => {
   for (const identity of [
     { _id: 'category-new', slug: 'renamed-new' },

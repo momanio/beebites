@@ -43,10 +43,10 @@ export const product = defineType({
     }),
     defineField({
       name: 'additionalCategories',
-      title: 'اعرض المنتج أيضاً في',
+      title: 'ربط المنتج بقسم آخر',
       type: 'array',
       of: [{ type: 'reference', to: [{ type: 'category' }] }],
-      description: 'اختر قسماً موجوداً من القائمة ليظهر فيه المنتج أيضاً، ثم اضغط Publish. يمكنك اختيار أكثر من قسم.',
+      description: 'مثلاً: إذا أنشأت قهوة في «جديد»، اختر «قهوة» هنا ليظهر المنتج في القسمين. ويمكنك اختيار قسم فرعي من القائمة أيضاً.',
       components: { input: AdditionalCategoriesInput },
       validation: (rule) => rule.custom((references, context) => {
         const ids = (references ?? []).flatMap((reference) => {
