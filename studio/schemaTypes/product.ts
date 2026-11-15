@@ -1,4 +1,5 @@
 import { defineField, defineType } from 'sanity'
+import { AdditionalCategoriesInput } from '../components/AdditionalCategoriesInput'
 
 export const product = defineType({
   name: 'product',
@@ -42,10 +43,11 @@ export const product = defineType({
     }),
     defineField({
       name: 'additionalCategories',
-      title: 'أقسام إضافية',
+      title: 'اعرض المنتج أيضاً في',
       type: 'array',
       of: [{ type: 'reference', to: [{ type: 'category' }] }],
-      description: 'اختر الأقسام الأخرى التي تريد عرض المنتج فيها، مثل الخلايا مع جديدنا. يبقى المنتج واحداً في الصندوق والطلب.',
+      description: 'اختر قسماً موجوداً من القائمة ليظهر فيه المنتج أيضاً، ثم اضغط Publish. يمكنك اختيار أكثر من قسم.',
+      components: { input: AdditionalCategoriesInput },
       validation: (rule) => rule.custom((references, context) => {
         const ids = (references ?? []).flatMap((reference) => {
           const id = (reference as { _ref?: string })._ref
