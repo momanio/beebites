@@ -83,14 +83,17 @@ export function Header({
         <div className="flex items-center gap-2 md:gap-4">
           <LanguageSwitch className="desktop-language-switch" />
           {count > 0 && (
-            <a
+            <button
+              type="button"
               className="header-bag"
-              href="#cart"
               aria-label={t('سلتك: {count} قطع', { count })}
+              aria-haspopup="dialog"
+              aria-controls="cart-dialog"
+              onClick={() => document.querySelector<HTMLDialogElement>('#cart-dialog')?.showModal()}
             >
               <Icon name="bag" size={21} />
               <span>{count}</span>
-            </a>
+            </button>
           )}
           <WhatsAppLink
             settings={settings}

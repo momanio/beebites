@@ -79,7 +79,7 @@ function App() {
               <div>
                 <p className="eyebrow">{t('اختار حلا جمعتك')}</p>
                 <h2 id="menu-title" ref={menuTitle} tabIndex={-1}>
-                  {t('قائمة بي بايتس')}
+                  {t('قائمة بيي بايتس')}
                 </h2>
               </div>
             </div>

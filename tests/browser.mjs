@@ -113,6 +113,10 @@ try {
   await page.locator('.product-card').first().waitFor()
   assert.equal(await page.locator('html').getAttribute('dir'), 'rtl')
   assert.equal(await page.locator('html').getAttribute('lang'), 'ar')
+  assert.equal(
+    await page.getByRole('link', { name: 'بي بايتس على فيسبوك' }).first().getAttribute('href'),
+    'https://web.facebook.com/profile.php?id=61591721979434',
+  )
   assert.equal(await page.locator('.product-card').count(), 13)
   assert.deepEqual(
     await page.locator('.category-nav .category-chip').allTextContents(),
@@ -160,6 +164,12 @@ try {
       .count(),
     0,
   )
+  assert.deepEqual(
+    await page.locator('.product-card').first()
+      .locator('.product-description, .product-subtitle')
+      .evaluateAll((elements) => elements.map((element) => element.className)),
+    ['product-description', 'product-subtitle'],
+  )
   // Product photos open an accessible preview without changing the cart.
   const preview = page.locator('.product-preview[open]')
   const previewTrigger = page.locator('.product-card .product-image-wrap').first()
@@ -169,6 +179,15 @@ try {
   assert.equal(await preview.locator('h2').innerText(), menu.products[0].name)
   assert.equal(await preview.locator('.product-preview-description').innerText(), menu.products[0].description)
   assert.equal(await preview.locator('.product-preview-subtitle').innerText(), menu.products[0].subtitle)
+  assert.deepEqual(
+    await preview.locator('.product-preview-copy > .product-preview-description, .product-preview-copy > .product-preview-subtitle')
+      .evaluateAll((elements) => elements.map((element) => element.className)),
+    ['product-preview-description', 'product-preview-subtitle'],
+  )
+  assert.ok(
+    await preview.locator('.product-preview-category .section-banner-title')
+      .evaluate((element) => parseFloat(getComputedStyle(element).fontSize)) < 28,
+  )
   const previewImage = preview.locator('.product-preview-photo img')
   assert.equal(new URL(await previewImage.getAttribute('src')).searchParams.get('fit'), 'max')
   assert.equal(new URL(await previewImage.getAttribute('src')).searchParams.has('h'), false)
@@ -280,6 +299,11 @@ try {
   assert.equal(await heroDots.count(), 5)
   assert.equal(await heroTitle.innerText(), menu.products[0].name)
   assert.equal(await page.locator('.hero-product-description').innerText(), menu.products[0].description)
+  assert.deepEqual(
+    await page.locator('.hero-product-description, .hero-product-subtitle')
+      .evaluateAll((elements) => elements.map((element) => element.className)),
+    ['hero-product-description', 'hero-product-subtitle'],
+  )
   assert.equal(new URL(await heroPhotos.getAttribute('src')).origin, 'https://cdn.sanity.io')
   assert.equal(new URL(await heroPhotos.getAttribute('src')).searchParams.get('fit'), 'max')
   await page.waitForFunction((image) => image.complete && image.naturalWidth > 0, await heroPhotos.elementHandle())
@@ -295,6 +319,12 @@ try {
   await heroNext.focus()
   await page.keyboard.press('Enter')
   assert.equal(await heroTitle.innerText(), heroNames[1])
+  const heroLabel = page.locator('.hero-product-caption .eyebrow')
+  assert.equal(await heroLabel.innerText(), 'رائج')
+  assert.equal(
+    await heroLabel.evaluate((element) => getComputedStyle(element).color),
+    'rgb(179, 38, 43)',
+  )
   assert.equal(await heroNext.evaluate((element) => element === document.activeElement), true, 'The image arrow keeps keyboard focus after navigation')
   await page.keyboard.press('Enter')
   assert.equal(await heroTitle.innerText(), heroNames[2])
@@ -306,6 +336,11 @@ try {
   for (let index = 0; index < 5; index++) {
     await heroDots.nth(index).click()
     assert.equal(await heroTitle.innerText(), heroNames[index])
+    assert.equal(
+      await heroLabel.evaluate((element) => getComputedStyle(element).color),
+      'rgb(179, 38, 43)',
+      'All hero product labels use the brand red',
+    )
     assert.equal(await heroDots.nth(index).getAttribute('aria-current'), 'true')
     assert.equal(await heroPhotos.count(), 1)
     const selectedProduct = menu.products.find((product) => product.name === heroNames[index])
@@ -638,6 +673,11 @@ try {
   await page.reload()
   await page.locator('.cart-bar').waitFor()
   assert.ok((await page.locator('.cart-summary').innerText()).includes('17 JD'))
+  await page.locator('.header-bag').click()
+  await page.locator('#cart-dialog[open]').waitFor()
+  assert.equal(await page.locator('.cart-line-list li').count(), 2)
+  await page.keyboard.press('Escape')
+  await page.locator('#cart-dialog[open]').waitFor({ state: 'hidden' })
   await page.locator('.cart-summary').click()
   await page.locator('dialog[open]').waitFor()
   assert.equal(await page.locator('.cart-line-list li').count(), 2)
@@ -716,6 +756,12 @@ try {
     // The extra mobile branding must still leave room for cart/order/menu controls.
     await first.getByRole('button', { name: 'زيادة كمية خلية شوكليت مكس', exact: true }).click()
     await page.locator('.header-bag').waitFor()
+    if (width === 390) {
+      await page.locator('.header-bag').click()
+      await page.locator('#cart-dialog[open]').waitFor()
+      await page.keyboard.press('Escape')
+      await page.locator('#cart-dialog[open]').waitFor({ state: 'hidden' })
+    }
     const brand = await page.locator('.site-header .brand-link').boundingBox()
     const controls = await page.locator('.header-order').locator('..').boundingBox()
     assert.ok(brand.x >= controls.x + controls.width, `Header controls do not overlap the brand at ${width}px`)
@@ -910,7 +956,7 @@ try {
   await delay(450)
   const savedCartBeforeLanguage = await page.evaluate(() => localStorage.getItem('beebites-cart-v1'))
   await page.getByRole('button', { name: 'Switch to English', exact: true }).click()
-  await page.getByRole('heading', { name: 'The BeeBites menu', exact: true }).waitFor()
+  await page.getByRole('heading', { name: 'BeeBites menu', exact: true }).waitFor()
   assert.equal(await page.locator('html').getAttribute('dir'), 'ltr')
   assert.equal(await page.locator('html').getAttribute('lang'), 'en')
   assert.equal(await page.locator('#about h2').innerText(), 'Why BeeBites?')
@@ -943,19 +989,19 @@ try {
     await page.screenshot({ path: `test-results/english-${width}.png` })
   }
   await page.reload()
-  await page.getByRole('heading', { name: 'The BeeBites menu', exact: true }).waitFor()
+  await page.getByRole('heading', { name: 'BeeBites menu', exact: true }).waitFor()
   await page.locator('.cart-bar').waitFor()
   assert.equal(await page.locator('html').getAttribute('lang'), 'en', 'Language choice survives reload')
   await page.setViewportSize({ width: 390, height: 900 })
   await page.getByRole('button', { name: 'Open menu', exact: true }).click()
   await page.getByRole('button', { name: 'التبديل إلى العربية', exact: true }).click()
-  await page.getByRole('heading', { name: 'قائمة بي بايتس', exact: true }).waitFor()
+  await page.getByRole('heading', { name: 'قائمة بيي بايتس', exact: true }).waitFor()
   assert.equal(await page.locator('html').getAttribute('dir'), 'rtl')
   assert.equal(await page.evaluate(() => localStorage.getItem('beebites-cart-v1')), savedCartBeforeLanguage)
   await page.getByRole('button', { name: 'Switch to English', exact: true }).click()
   await page.getByRole('button', { name: 'Close menu', exact: true }).click()
   await page.goto(`${origin}/?lang=ar`)
-  await page.getByRole('heading', { name: 'قائمة بي بايتس', exact: true }).waitFor()
+  await page.getByRole('heading', { name: 'قائمة بيي بايتس', exact: true }).waitFor()
   assert.equal(await page.locator('html').getAttribute('dir'), 'rtl', 'An explicit language link overrides the stored preference')
 
   // Denied localStorage must not prevent selecting products.

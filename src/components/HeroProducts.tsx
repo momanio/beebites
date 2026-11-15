@@ -21,7 +21,7 @@ const translations = {
     inMenu: 'في القائمة',
     hint: 'اسحب الصورة أو استخدم الأسهم',
     featured: 'من اختياراتنا',
-    trend: 'رائج هالأيام',
+    trend: 'رائج',
     menu: 'من قائمتنا',
     placeholder: 'صورة توضيحية مؤقتة',
     photoSoon: 'صورة المنتج قريباً',
@@ -38,7 +38,7 @@ const translations = {
     inMenu: 'in the menu',
     hint: 'Swipe or use the arrows',
     featured: 'Our picks',
-    trend: 'Trending now',
+    trend: 'Trending',
     menu: 'From our menu',
     placeholder: 'Temporary illustration',
     photoSoon: 'Product photo coming soon',
@@ -234,13 +234,13 @@ export function HeroProducts({ products }: { products: Product[] }) {
                   : labels.menu}
             </p>
             <h2 dir="auto">{product.name}</h2>
-            {subtitle && description && (
-              <p className="hero-product-subtitle" dir="auto">{subtitle}</p>
-            )}
             {(description || subtitle) && (
               <p className="hero-product-description" dir="auto">
                 {description || subtitle}
               </p>
+            )}
+            {subtitle && description && (
+              <p className="hero-product-subtitle" dir="auto">{subtitle}</p>
             )}
           </div>
         </article>

@@ -153,17 +153,17 @@ export function ProductPreview({
               <h2 id="product-preview-title" dir="auto">
                 {product.name}
               </h2>
-              {product.subtitle && (
-                <p className="product-preview-subtitle" dir="auto">{product.subtitle}</p>
-              )}
+              <p id="product-preview-description" className="product-preview-description" dir="auto">
+                {product.description || t('تفاصيل هالنكهة بنشاركها معك قريباً.')}
+              </p>
               <div className="product-preview-divider" aria-hidden="true">
                 <span />
                 <Icon name="hexagon" size={16} />
                 <span />
               </div>
-              <p id="product-preview-description" className="product-preview-description" dir="auto">
-                {product.description || t('تفاصيل هالنكهة بنشاركها معك قريباً.')}
-              </p>
+              {product.subtitle && (
+                <p className="product-preview-subtitle" dir="auto">{product.subtitle}</p>
+              )}
               <div className="product-preview-footer">
                 <div className="product-preview-price">
                   <span>{t('السعر')}</span>

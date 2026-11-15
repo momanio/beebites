@@ -4,7 +4,7 @@ const english = {
   'انتقل إلى المحتوى': 'Skip to content',
   'إعلان بي بايتس': 'BeeBites announcement',
   'اختار حلا جمعتك': 'Something sweet to share',
-  'قائمة بي بايتس': 'The BeeBites menu',
+  'قائمة بيي بايتس': 'BeeBites menu',
   'ما قدرنا نحدّث القائمة الآن. آخر قائمة محمّلة ما زالت معروضة.': 'We couldn’t refresh the menu. Your last loaded menu is still available.',
   'ما قدرنا نحمّل القائمة الآن. صندوقك محفوظ؛ جرّب مرة ثانية.': 'We couldn’t load the menu. Your box is saved; please try again.',
   'حاول مرة ثانية': 'Try again',
@@ -109,7 +109,7 @@ const english = {
 export type MessageKey = keyof typeof english
 
 export function translate(key: MessageKey, language: Language, values: Record<string, string | number> = {}): string {
-  const template = language === 'en' ? english[key] : key
+  const template = (language === 'en' ? english[key] : key) ?? key ?? ''
   const result = template.replace(/\{(\w+)\}/g, (match, name: string) => String(values[name] ?? match))
   return language === 'en' && values.count === 1 ? result.replace(/\bitems\b/g, 'item') : result
 }
