@@ -11,13 +11,14 @@ interface CategoryReference {
 interface CategoryOption {
   _id: string
   title: string
+  parentId?: string | null
   parentTitle?: string | null
 }
 
 const clientOptions = { apiVersion: '2026-01-01' }
 const categoriesQuery = `*[_type == "category" && !(_id in path("drafts.**"))]
   | order(order asc, title asc) {
-    _id, title, "parentTitle": parent->title
+    _id, title, "parentId": parent._ref, "parentTitle": parent->title
   }`
 
 function categoryLabel(category: CategoryOption): string {
@@ -48,9 +49,17 @@ export function AdditionalCategoriesInput(props: ArrayOfPrimitivesInputProps) {
   // Sanity types reference arrays as primitive inputs, but their values are keyed references.
   const selected = (props.value ?? []) as unknown as CategoryReference[]
   const selectedIds = new Set(selected.map((reference) => reference._ref))
-  const available = categories?.filter(
-    (category) => category._id !== primaryCategory?._ref && !selectedIds.has(category._id),
+  const categoryIds = new Set(categories?.map((category) => category._id))
+  const roots = categories?.filter(
+    (category) => !category.parentId || !categoryIds.has(category.parentId),
   ) ?? []
+  const orderedCategories = roots.flatMap((root) => [
+    root,
+    ...(categories?.filter((category) => category.parentId === root._id) ?? []),
+  ])
+  const available = orderedCategories.filter(
+    (category) => category._id !== primaryCategory?._ref && !selectedIds.has(category._id),
+  )
   const categoryNames = new Map(categories?.map((category) => [category._id, categoryLabel(category)]))
 
   function addCategory(id: string) {
@@ -68,7 +77,7 @@ export function AdditionalCategoriesInput(props: ArrayOfPrimitivesInputProps) {
   return (
     <Stack space={3}>
       <Select
-        aria-label="اختر قسماً إضافياً موجوداً"
+        aria-label="اختر القسم الآخر للمنتج"
         value=""
         disabled={props.readOnly || loadError || available.length === 0}
         onChange={(event) => addCategory(event.currentTarget.value)}
@@ -76,7 +85,7 @@ export function AdditionalCategoriesInput(props: ArrayOfPrimitivesInputProps) {
         <option value="">
           {categories === null && !loadError
             ? 'جارٍ تحميل الأقسام…'
-            : available.length === 0 ? 'لا توجد أقسام أخرى للاختيار' : 'اختر قسماً موجوداً…'}
+            : available.length === 0 ? 'لا توجد أقسام أخرى للاختيار' : 'اختر القسم الآخر…'}
         </option>
         {available.map((category) => (
           <option key={category._id} value={category._id}>
