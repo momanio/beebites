@@ -11,9 +11,11 @@ export function whatsappUrl(number: string, message: string): string | null {
 
 export function buildOrderMessage(lines: CartLine[], language: Language = 'ar'): string {
   const total = roundMoney(lines.reduce((sum, line) => sum + line.lineTotal, 0))
+  const quantityLabel = language === 'en' ? 'Quantity' : 'عدد'
+  const priceLabel = language === 'en' ? 'Price' : 'السعر'
   const items = lines.map(
     ({ product, quantity, lineTotal }) =>
-      `• ${product.name}${product.subtitle ? ` ${product.subtitle}` : ''}\n  ${quantity} × ${formatPrice(product.price)} = ${formatPrice(lineTotal)}`,
+      `• ${product.name}  ${quantityLabel} ${quantity}\n  ${priceLabel} = ${formatPrice(lineTotal)}`,
   )
   return [
     language === 'en' ? 'My BeeBites order 🐝' : 'طلبي من BeeBites 🐝',

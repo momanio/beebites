@@ -169,7 +169,7 @@ try {
   assert.equal(await preview.locator('h2').innerText(), menu.products[0].name)
   assert.equal(await preview.locator('.product-preview-description').innerText(), menu.products[0].description)
   assert.equal(await preview.locator('.product-preview-subtitle').innerText(), menu.products[0].subtitle)
-  const previewImage = preview.locator('img')
+  const previewImage = preview.locator('.product-preview-photo img')
   assert.equal(new URL(await previewImage.getAttribute('src')).searchParams.get('fit'), 'max')
   assert.equal(new URL(await previewImage.getAttribute('src')).searchParams.has('h'), false)
   await page.waitForFunction((image) => image.complete && image.naturalWidth > 0, await previewImage.elementHandle())
@@ -198,7 +198,7 @@ try {
   // Missing descriptions and photos, including coming-soon items, still preview.
   await page.locator('.product-coming-soon .product-image-wrap').first().click()
   await preview.waitFor()
-  assert.equal(await preview.locator('img').getAttribute('src'), '/product-placeholder.svg')
+  assert.equal(await previewImage.getAttribute('src'), '/product-placeholder.svg')
   assert.equal(await preview.locator('.product-preview-placeholder').count(), 1)
   assert.equal(await preview.locator('.product-preview-description').innerText(), 'تفاصيل هالنكهة بنشاركها معك قريباً.')
   assert.equal(await preview.locator('.product-preview-badge').innerText(), 'قريباً… استنّونا')
@@ -212,7 +212,7 @@ try {
   await page.route('https://cdn.sanity.io/images/**', failPhoto)
   await previewTrigger.click()
   await preview.locator('.product-preview-placeholder').waitFor()
-  assert.equal(await preview.locator('img').getAttribute('src'), '/product-placeholder.svg')
+  assert.equal(await previewImage.getAttribute('src'), '/product-placeholder.svg')
   await page.keyboard.press('Escape')
   await preview.waitFor({ state: 'hidden' })
   await page.unroute('https://cdn.sanity.io/images/**', failPhoto)
@@ -240,7 +240,9 @@ try {
   assert.ok((await preview.locator('.product-preview-line-total').innerText()).includes('11 JD'))
   const modalOrderUrl = new URL(await preview.locator('.product-preview-send').getAttribute('href'))
   assert.equal(modalOrderUrl.pathname, '/962790000000')
-  assert.ok(modalOrderUrl.searchParams.get('text').includes('2 × 5.5 JD = 11 JD'))
+  assert.ok(modalOrderUrl.searchParams.get('text').includes(`• ${menu.products[0].name}  عدد 2\n  السعر = 11 JD`))
+  assert.ok(!modalOrderUrl.searchParams.get('text').includes(menu.products[0].subtitle))
+  assert.ok(!modalOrderUrl.searchParams.get('text').includes(menu.products[0].description))
   assert.ok(modalOrderUrl.searchParams.get('text').includes(menu.products[1].name))
   assert.ok(modalOrderUrl.searchParams.get('text').includes('المجموع: 16.5 JD'))
   assert.equal(modalOrderUrl.href, await page.locator('.cart-send').getAttribute('href'))
@@ -306,7 +308,13 @@ try {
     assert.equal(await heroTitle.innerText(), heroNames[index])
     assert.equal(await heroDots.nth(index).getAttribute('aria-current'), 'true')
     assert.equal(await heroPhotos.count(), 1)
-    assert.ok((await page.locator('.hero-product-description').innerText()).length > 0)
+    const selectedProduct = menu.products.find((product) => product.name === heroNames[index])
+    const expectedDescription = selectedProduct.description?.trim() || selectedProduct.subtitle?.trim()
+    assert.deepEqual(
+      await page.locator('.hero-product-description').allTextContents(),
+      expectedDescription ? [expectedDescription] : [],
+      'The hero shows only saved product copy and hides missing descriptions',
+    )
   }
   await heroNext.click()
   assert.equal(await heroTitle.innerText(), heroNames[0], 'Next wraps to the first product')
@@ -579,7 +587,7 @@ try {
     orderUrl.searchParams.get('text').startsWith('طلبي من BeeBites 🐝\n'),
   )
   assert.ok(!orderUrl.searchParams.get('text').includes('test'))
-  assert.ok(orderUrl.searchParams.get('text').includes('2 × 5.5 JD = 11 JD'))
+  assert.ok(orderUrl.searchParams.get('text').includes(`• ${menu.products[0].name}  عدد 2\n  السعر = 11 JD`))
   assert.ok(orderUrl.searchParams.get('text').includes('المجموع: 17 JD'))
   await page.reload()
   await page.locator('.cart-bar').waitFor()
@@ -868,7 +876,7 @@ try {
   assert.ok((await page.locator('.cart-summary').innerText()).includes('2 items'))
   const englishOrder = new URL(await page.locator('.cart-send').getAttribute('href')).searchParams.get('text')
   assert.ok(englishOrder.startsWith('My BeeBites order'))
-  assert.ok(englishOrder.includes('English pastry from Studio'))
+  assert.ok(englishOrder.includes('• English pastry from Studio  Quantity 2\n  Price = 11 JD'))
   assert.ok(englishOrder.includes('Total: 11 JD'))
   assert.ok((await page.title()).includes('BeeBites |'))
   assert.equal(await page.locator('meta[property="og:locale"]').getAttribute('content'), 'en_JO')

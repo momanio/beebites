@@ -18,11 +18,11 @@ const translations = {
     of: 'من',
     choose: 'اختر منتجاً',
     view: 'عرض',
+    inMenu: 'في القائمة',
     hint: 'اسحب الصورة أو استخدم الأسهم',
     featured: 'من اختياراتنا',
     trend: 'رائج هالأيام',
-    bakery: 'من مخبوزاتنا',
-    description: 'مخبوزة طازجة على طلبك، لتكمّل جمعتك.',
+    menu: 'من قائمتنا',
     placeholder: 'صورة توضيحية مؤقتة',
     photoSoon: 'صورة المنتج قريباً',
   },
@@ -35,11 +35,11 @@ const translations = {
     of: 'of',
     choose: 'Choose a product',
     view: 'View',
+    inMenu: 'in the menu',
     hint: 'Swipe or use the arrows',
     featured: 'Our picks',
     trend: 'Trending now',
-    bakery: 'From our bakery',
-    description: 'Freshly baked to order, made for sharing.',
+    menu: 'From our menu',
     placeholder: 'Temporary illustration',
     photoSoon: 'Product photo coming soon',
   },
@@ -66,6 +66,9 @@ function HeroPhoto({ product, language }: { product: Product; language: Carousel
         }}
       />
       {!hasImage && <span className="placeholder-caption">{labels.photoSoon}</span>}
+      {product.badge && (
+        <span className="product-badge hero-product-badge">{product.badge}</span>
+      )}
     </div>
   )
 }
@@ -79,6 +82,7 @@ export function HeroProducts({ products }: { products: Product[] }) {
   const [selection, setSelection] = useState({ id: '', direction: 0 })
   const [hasInteracted, setHasInteracted] = useState(false)
   const showcase = useRef<HTMLDivElement>(null)
+  const wasDragged = useRef(false)
   const slideId = useId()
   const reducedMotion = useReducedMotion()
   const { language } = useLanguage()
@@ -87,6 +91,9 @@ export function HeroProducts({ products }: { products: Product[] }) {
   const product = featured[activeIndex]
 
   if (!product) return null
+
+  const description = product.description?.trim()
+  const subtitle = product.subtitle?.trim()
 
   function isRtl() {
     return showcase.current && getComputedStyle(showcase.current).direction === 'rtl'
@@ -140,9 +147,12 @@ export function HeroProducts({ products }: { products: Product[] }) {
                 </button>
               )}
               <div className="hero-photo-card min-w-0 flex-1 overflow-hidden">
-                <motion.div
+                <motion.a
                   key={product._id}
-                  className="h-full w-full"
+                  href={`#menu-product-${product._id}`}
+                  aria-label={`${labels.view} ${product.name} ${labels.inMenu}`}
+                  className="block h-full w-full rounded-[inherit] focus-visible:outline-offset-2!"
+                  draggable={false}
                   initial={{ opacity: 0, x: reducedMotion ? 0 : selection.direction * 24 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: reducedMotion ? 0.15 : 0.25 }}
@@ -150,16 +160,25 @@ export function HeroProducts({ products }: { products: Product[] }) {
                   dragConstraints={{ left: 0, right: 0 }}
                   dragElastic={reducedMotion ? 0 : 0.15}
                   dragMomentum={false}
-                  onPointerDown={() => setHasInteracted(true)}
-                  onDragStart={() => setHasInteracted(true)}
+                  onPointerDown={() => {
+                    wasDragged.current = false
+                    setHasInteracted(true)
+                  }}
+                  onDragStart={() => {
+                    wasDragged.current = true
+                    setHasInteracted(true)
+                  }}
                   onDragEnd={(_event, info) => {
                     if (Math.abs(info.offset.x) < 45) return
                     const change = (info.offset.x > 0 ? -1 : 1) * (isRtl() ? -1 : 1)
                     select(activeIndex + change)
                   }}
+                  onClick={(event) => {
+                    if (wasDragged.current && event.detail > 0) event.preventDefault()
+                  }}
                 >
                   <HeroPhoto product={product} language={language} />
-                </motion.div>
+                </motion.a>
               </div>
               {featured.length > 1 && (
                 <button
@@ -212,15 +231,17 @@ export function HeroProducts({ products }: { products: Product[] }) {
                 ? labels.featured
                 : product.heroHighlight === 'trend'
                   ? labels.trend
-                  : labels.bakery}
+                  : labels.menu}
             </p>
             <h2 dir="auto">{product.name}</h2>
-            {product.subtitle && product.description && (
-              <p className="hero-product-subtitle" dir="auto">{product.subtitle}</p>
+            {subtitle && description && (
+              <p className="hero-product-subtitle" dir="auto">{subtitle}</p>
             )}
-            <p className="hero-product-description" dir="auto">
-              {product.description || product.subtitle || labels.description}
-            </p>
+            {(description || subtitle) && (
+              <p className="hero-product-description" dir="auto">
+                {description || subtitle}
+              </p>
+            )}
           </div>
         </article>
       </div>
