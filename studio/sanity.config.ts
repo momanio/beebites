@@ -23,7 +23,7 @@ export default defineConfig({
           S.documentTypeList('product')
             .title('منتجات القسم')
             .filter(
-              `_type == "product" && (${productCategoryExpression}) == $categoryId`,
+              `_type == "product" && ((${productCategoryExpression}) == $categoryId || $categoryId in additionalCategories[]._ref)`,
             )
             .params({ categoryId: categoryId.replace(/^drafts\./, '') })
             .initialValueTemplates([

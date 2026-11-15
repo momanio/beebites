@@ -8,13 +8,15 @@ import { PriceTag } from './PriceTag'
 
 interface ProductCardProps {
   product: Product
+  displayCategoryId: string
   quantity: number
   onQuantityChange: (id: string, change: number) => void
-  onPreview: (id: string) => void
+  onPreview: (id: string, categoryId: string) => void
 }
 
 export function ProductCard({
   product,
+  displayCategoryId,
   quantity,
   onQuantityChange,
   onPreview,
@@ -23,10 +25,13 @@ export function ProductCard({
   const [failedSource, setFailedSource] = useState<string>()
   const source = imageUrl(product.image, 640)
   const hasImage = source && source !== failedSource
-  const titleId = `product-${product._id}`
+  const cardId = displayCategoryId === product.categoryId
+    ? `menu-product-${product._id}`
+    : `menu-product-${product._id}-category-${displayCategoryId}`
+  const titleId = `${cardId}-title`
   return (
     <article
-      id={`menu-product-${product._id}`}
+      id={cardId}
       tabIndex={-1}
       className={`product-card ${product.comingSoon ? 'product-coming-soon' : ''} ${quantity > 0 ? 'product-selected' : ''}`}
       aria-labelledby={titleId}
@@ -36,7 +41,7 @@ export function ProductCard({
         className="product-image-wrap"
         aria-label={t('عرض تفاصيل {name}', { name: product.name })}
         aria-haspopup="dialog"
-        onClick={() => onPreview(product._id)}
+        onClick={() => onPreview(product._id, displayCategoryId)}
       >
         <span className="product-hex-glow" aria-hidden="true" />
         <img
@@ -79,7 +84,7 @@ export function ProductCard({
             type="button"
             className="product-title-button"
             aria-haspopup="dialog"
-            onClick={() => onPreview(product._id)}
+            onClick={() => onPreview(product._id, displayCategoryId)}
           >
             {product.name}
           </button>

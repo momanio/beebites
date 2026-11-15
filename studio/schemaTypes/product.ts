@@ -1,4 +1,5 @@
 import { defineField, defineType } from 'sanity'
+import { AdditionalCategoriesInput } from '../components/AdditionalCategoriesInput'
 
 export const product = defineType({
   name: 'product',
@@ -39,6 +40,26 @@ export const product = defineType({
       description:
         'اختر قسماً رئيسياً أو فرعياً. يمكنك إنشاء قسم جديد من هنا أو من إدارة الأقسام، ثم نشره قبل نشر المنتج.',
       validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: 'additionalCategories',
+      title: 'اعرض المنتج أيضاً في',
+      type: 'array',
+      of: [{ type: 'reference', to: [{ type: 'category' }] }],
+      description: 'اختر قسماً موجوداً من القائمة ليظهر فيه المنتج أيضاً، ثم اضغط Publish. يمكنك اختيار أكثر من قسم.',
+      components: { input: AdditionalCategoriesInput },
+      validation: (rule) => rule.custom((references, context) => {
+        const ids = (references ?? []).flatMap((reference) => {
+          const id = (reference as { _ref?: string })._ref
+          return id ? [id] : []
+        })
+        const primaryId = (
+          context.document?.category as { _ref?: string } | undefined
+        )?._ref
+        if (primaryId && ids.includes(primaryId)) return 'القسم الأساسي موجود بالفعل؛ اختر قسماً آخر.'
+        if (new Set(ids).size !== ids.length) return 'لا تكرر القسم نفسه.'
+        return true
+      }),
     }),
     defineField({
       name: 'price',

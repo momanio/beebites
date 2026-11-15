@@ -14,6 +14,7 @@ export const menuQuery = `{
   },
   "products": *[_type == "product" && available != false] | order(order asc, name asc) {
     _id, name, nameEn, subtitle, subtitleEn, "categoryId": ${productCategoryExpression},
+    "additionalCategoryIds": coalesce(additionalCategories[]._ref, []),
     "categoryTitle": category->title, price, image,
     description, descriptionEn, badge, badgeEn, heroHighlight, "comingSoon": coalesce(comingSoon, false),
     "available": coalesce(available, true), "order": coalesce(order, 0)
