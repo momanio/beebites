@@ -143,7 +143,7 @@ export const fallbackSettings: SiteSettings = {
   orderNote:
     'لأن كل خلية بتنخبز بحب وعلى الطلب، يا ريت تطلبوا قبل بيوم. بنأكد معكم الموعد والتفاصيل على واتساب.',
   instagramUrl: 'https://www.instagram.com/BeeBites.Jo/',
-  facebookUrl: 'https://www.facebook.com/BeeBites.Jo/',
+  facebookUrl: 'https://web.facebook.com/profile.php?id=61591721979434',
   announcement: { enabled: false, text: '' },
   aboutCards,
 }

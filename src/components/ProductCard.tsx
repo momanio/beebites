@@ -89,10 +89,10 @@ export function ProductCard({
             {product.name}
           </button>
         </h3>
-        <p className="product-subtitle">{product.subtitle || '\u00a0'}</p>
         {product.description && (
           <p className="product-description">{product.description}</p>
         )}
+        <p className="product-subtitle">{product.subtitle || '\u00a0'}</p>
         <PriceTag price={product.price} />
         {product.comingSoon ? (
           <button className="coming-soon-button" disabled type="button">

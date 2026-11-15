@@ -72,6 +72,7 @@ export function CartBar({
         </div>
       </motion.aside>
       <dialog
+        id="cart-dialog"
         className="cart-dialog"
         ref={dialog}
         aria-labelledby="cart-dialog-title"

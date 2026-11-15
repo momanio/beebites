@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { fallbackMenu, fallbackSettings } from '../data/fallbackMenu.ts'
 import { localizeMenu, localizeSettings } from './localization.ts'
-import { translate } from './i18n.ts'
+import { translate, type MessageKey } from './i18n.ts'
 import { buildOrderMessage } from './whatsapp.ts'
 import { getCartLines } from './cart.ts'
 
@@ -56,4 +56,6 @@ test('language changes keep quantities and generate English WhatsApp orders', ()
   assert.ok(buildOrderMessage(arabic).startsWith('طلبي من BeeBites'))
   assert.equal(translate('زيادة كمية {name}', 'en', { name: 'Chocolate' }), 'Increase quantity of Chocolate')
   assert.equal(translate('{count} قطع', 'en', { count: 1 }), '1 item')
+  assert.equal(translate('قائمة بيي بايتس', 'en'), 'BeeBites menu')
+  assert.equal(translate('مفتاح غير موجود' as MessageKey, 'en'), 'مفتاح غير موجود')
 })
