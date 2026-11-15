@@ -1,5 +1,5 @@
 import { menuCategories } from '../data/menuCategories.ts'
-import type { Category, MenuData } from '../types/menu'
+import type { Category, MenuData, Product } from '../types/menu'
 
 function isNewArrivalsCategory(category: Category): boolean {
   return category._id === 'category-new' || category.slug === 'new'
@@ -9,6 +9,13 @@ export function rootCategories(categories: Category[]): Category[] {
   const ids = new Set(categories.map((category) => category._id))
   return categories.filter(
     (category) => !category.parentId || !ids.has(category.parentId),
+  )
+}
+
+export function productInCategory(product: Product, categoryId: string): boolean {
+  return (
+    product.categoryId === categoryId ||
+    product.additionalCategoryIds?.includes(categoryId) === true
   )
 }
 

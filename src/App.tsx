@@ -31,9 +31,15 @@ function App() {
   const originalSettings = useSiteSettings(retryKey)
   const settings = localizeSettings(originalSettings, language)
   const menuTitle = useRef<HTMLHeadingElement>(null)
-  const [previewId, setPreviewId] = useState<string | null>(null)
+  const [previewSelection, setPreviewSelection] = useState<{ productId: string; categoryId: string } | null>(null)
+  const previewId = previewSelection?.productId
   const previewProduct = products.find(
     (product) => product._id === previewId && product.available,
+  )
+  const previewCategory = categories.find(
+    (category) => category._id === previewSelection?.categoryId,
+  ) ?? categories.find(
+    (category) => category._id === previewProduct?.categoryId,
   )
   const cart = useCart(products, loading || !ready)
   const hasCart = ready && !loading && cart.count > 0
@@ -132,7 +138,7 @@ function App() {
                     onCategorySelect={selectCategory}
                     quantities={cart.quantities}
                     onQuantityChange={cart.changeQuantity}
-                    onPreview={setPreviewId}
+                    onPreview={(productId, categoryId) => setPreviewSelection({ productId, categoryId })}
                   />
                 ))
               ) : (
@@ -153,13 +159,13 @@ function App() {
         <Footer settings={settings} />
         <ProductPreview
           product={previewProduct}
-          category={categories.find((category) => category._id === previewProduct?.categoryId)}
+          category={previewCategory}
           quantity={cart.lines.find((line) => line.product._id === previewId)?.quantity ?? 0}
           lines={cart.lines}
           settings={settings}
           orderingDisabled={loading || !ready}
           onQuantityChange={cart.changeQuantity}
-          onClose={() => setPreviewId(null)}
+          onClose={() => setPreviewSelection(null)}
         />
         <WhatsAppFab settings={settings} hasCart={hasCart} />
         <div

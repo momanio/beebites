@@ -1,6 +1,7 @@
 import { useLanguage } from '../hooks/useLanguage'
 import type { Category, Product } from '../types/menu'
 import type { Quantities } from '../lib/cart'
+import { productInCategory } from '../lib/menu'
 import { ProductCard } from './ProductCard'
 import { Reveal } from './Reveal'
 import { SectionTitle } from './SectionTitle'
@@ -23,7 +24,7 @@ export function MenuSection({
   onCategorySelect: (id: string) => void
   quantities: Quantities
   onQuantityChange: (id: string, change: number) => void
-  onPreview: (id: string) => void
+  onPreview: (id: string, categoryId: string) => void
   subcategory?: boolean
 }) {
   const { t } = useLanguage()
@@ -31,7 +32,7 @@ export function MenuSection({
     ? []
     : categories.filter((item) => item.parentId === category._id)
   const categoryProducts = products.filter(
-    (product) => product.categoryId === category._id,
+    (product) => productInCategory(product, category._id),
   )
   return (
     <section
@@ -65,6 +66,7 @@ export function MenuSection({
             <Reveal key={product._id} delay={(index % 5) * 0.04}>
               <ProductCard
                 product={product}
+                displayCategoryId={category._id}
                 quantity={quantities[product._id] ?? 0}
                 onQuantityChange={onQuantityChange}
                 onPreview={onPreview}

@@ -41,6 +41,25 @@ export const product = defineType({
       validation: (rule) => rule.required(),
     }),
     defineField({
+      name: 'additionalCategories',
+      title: 'أقسام إضافية',
+      type: 'array',
+      of: [{ type: 'reference', to: [{ type: 'category' }] }],
+      description: 'اختر الأقسام الأخرى التي تريد عرض المنتج فيها، مثل الخلايا مع جديدنا. يبقى المنتج واحداً في الصندوق والطلب.',
+      validation: (rule) => rule.custom((references, context) => {
+        const ids = (references ?? []).flatMap((reference) => {
+          const id = (reference as { _ref?: string })._ref
+          return id ? [id] : []
+        })
+        const primaryId = (
+          context.document?.category as { _ref?: string } | undefined
+        )?._ref
+        if (primaryId && ids.includes(primaryId)) return 'القسم الأساسي موجود بالفعل؛ اختر قسماً آخر.'
+        if (new Set(ids).size !== ids.length) return 'لا تكرر القسم نفسه.'
+        return true
+      }),
+    }),
+    defineField({
       name: 'price',
       title: 'السعر بالدينار الأردني',
       type: 'number',

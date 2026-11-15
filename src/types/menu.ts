@@ -12,6 +12,7 @@ export interface Product {
   subtitle?: string | null
   subtitleEn?: string | null
   categoryId: string
+  additionalCategoryIds?: string[] | null
   categoryTitle?: string | null
   price: number
   image?: SanityImage | null

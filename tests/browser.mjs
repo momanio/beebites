@@ -477,6 +477,50 @@ try {
     .getByRole('heading', { name: 'كيك الشوكليت', exact: true })
     .waitFor({ state: 'detached' })
 
+  // A single product may be listed under both جديدنا and الخلايا.
+  menu.products.push({
+    ...menu.products[0],
+    _id: 'cross-listed-product',
+    name: 'خلية الحبة الكاملة',
+    categoryId: 'category-new',
+    additionalCategoryIds: ['category-cells'],
+  })
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  const newArrivalsCard = page.locator('#category-category-new #menu-product-cross-listed-product')
+  const cellsCard = page.locator('#category-category-cells > .grid #menu-product-cross-listed-product-category-category-cells')
+  await cellsCard.waitFor()
+  assert.equal(await newArrivalsCard.count(), 1)
+  assert.equal(await cellsCard.count(), 1)
+  assert.equal(await page.locator('#menu-product-cross-listed-product').count(), 1)
+  assert.equal(await page.locator('#menu-product-cross-listed-product-category-category-cells').count(), 1)
+  await page.setViewportSize({ width: 1440, height: 1600 })
+  await page.evaluate(() => {
+    const category = document.querySelector('#category-category-new')
+    window.scrollTo(0, category.getBoundingClientRect().top + window.scrollY - 24)
+  })
+  await page.mouse.move(0, 0)
+  await page.waitForTimeout(300)
+  await page.screenshot({
+    path: 'test-results/multiple-categories.png',
+    style: '.site-header, .fab-link, .fab-tooltip, .category-nav { visibility: hidden !important; }',
+  })
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await cellsCard.locator('.product-image-wrap').click()
+  await preview.waitFor()
+  assert.equal(await preview.locator('.product-preview-category').innerText(), 'الخلايا')
+  await preview.locator('.product-preview-close').click()
+  await newArrivalsCard.locator('.product-image-wrap').click()
+  await preview.waitFor()
+  assert.equal(await preview.locator('.product-preview-category').innerText(), 'جديدنا')
+  await preview.locator('.product-preview-close').click()
+  await cellsCard.getByRole('button', { name: 'زيادة كمية خلية الحبة الكاملة' }).click()
+  assert.equal(await newArrivalsCard.locator('.selected-count').innerText(), '1')
+  assert.equal(await page.locator('.cart-line-list li').filter({ hasText: 'خلية الحبة الكاملة' }).count(), 1)
+  await newArrivalsCard.getByRole('button', { name: 'تقليل كمية خلية الحبة الكاملة' }).click()
+  menu.products.pop()
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await cellsCard.waitFor({ state: 'detached' })
+
   // Arbitrary editor-created categories stay reachable without widening the page.
   for (let index = 0; index < 14; index++)
     menu.categories.push({

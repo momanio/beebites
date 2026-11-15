@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { fallbackMenu } from '../data/fallbackMenu.ts'
-import { resolveMenu, rootCategories } from './menu.ts'
+import { productInCategory, resolveMenu, rootCategories } from './menu.ts'
 import {
   buildCategoryMigration,
   type MigrationDocument,
@@ -34,6 +34,22 @@ test('storefront reads arbitrary categories and keeps subcategories under their 
       ?.parentId,
     'custom',
   )
+})
+
+test('a product can appear in its primary and additional categories only once per category', () => {
+  const product = {
+    ...fallbackMenu.products[0],
+    categoryId: 'category-new',
+    additionalCategoryIds: ['category-cells', 'category-new'],
+  }
+  const menu = resolveMenu({
+    categories: fallbackMenu.categories,
+    products: [product],
+  })
+  assert.equal(menu.products.length, 1)
+  assert.equal(menu.products.filter((item) => productInCategory(item, 'category-new')).length, 1)
+  assert.equal(menu.products.filter((item) => productInCategory(item, 'category-cells')).length, 1)
+  assert.equal(productInCategory(menu.products[0], 'category-sweet'), false)
 })
 
 test('جديدنا stays first regardless of display order, including reused category IDs', () => {
