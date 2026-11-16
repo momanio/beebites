@@ -49,12 +49,17 @@ function HeroPhoto({ product, language }: { product: Product; language: Carousel
   const [failedSource, setFailedSource] = useState<string>()
   const source = imageUrl(product.image, 960, 'max')
   const hasImage = source && source !== failedSource
+  const sources = hasImage
+    ? `${imageUrl(product.image, 360, 'max')} 360w, ${imageUrl(product.image, 600, 'max')} 600w, ${source} 960w`
+    : undefined
   const labels = translations[language]
 
   return (
     <div className="hero-product-photo">
       <img
         src={hasImage ? source : '/product-placeholder.svg'}
+        srcSet={sources}
+        sizes="(min-width: 1024px) 440px, (min-width: 768px) 580px, (min-width: 480px) 424px, 70vw"
         alt={hasImage ? product.name : `${labels.placeholder} — ${product.name}`}
         width="960"
         height="960"

@@ -1,9 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { fallbackMenu } from '../data/fallbackMenu'
 import { sanityClient } from '../lib/sanity'
 import { menuQuery } from '../lib/queries'
 import { resolveMenu } from '../lib/menu'
 import type { MenuData } from '../types/menu'
+
+declare global {
+  interface Window {
+    __beebitesMenuPromise?: Promise<MenuData | undefined>
+  }
+}
 
 export function useMenu() {
   const [menu, setMenu] = useState<MenuData>(fallbackMenu)
@@ -11,6 +17,7 @@ export function useMenu() {
   const [ready, setReady] = useState(!sanityClient)
   const [error, setError] = useState(false)
   const [attempt, setAttempt] = useState(0)
+  const usedEarlyRequest = useRef(false)
 
   useEffect(() => {
     if (!sanityClient) return
@@ -22,11 +29,18 @@ export function useMenu() {
       if (refreshing || controller.signal.aborted) return
       refreshing = true
       try {
-        const data = await client.fetch<MenuData>(
-          menuQuery,
-          {},
-          { signal: controller.signal },
-        )
+        const earlyRequest = !usedEarlyRequest.current
+          ? window.__beebitesMenuPromise
+          : undefined
+        usedEarlyRequest.current = true
+        let data = await earlyRequest
+        if (!Array.isArray(data?.categories) || !Array.isArray(data?.products)) {
+          data = await client.fetch<MenuData>(
+            menuQuery,
+            {},
+            { signal: controller.signal },
+          )
+        }
         if (!Array.isArray(data?.categories) || !Array.isArray(data?.products))
           throw new Error('Invalid menu')
         if (!controller.signal.aborted) {

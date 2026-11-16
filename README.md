@@ -187,7 +187,9 @@ npm run deploy
 
 This invokes `sanity deploy` and updates the existing BeeBites Studio at `https://beebites.sanity.studio`, selected by `deployment.appId` in `studio/sanity.cli.ts`. The Sanity Dashboard opens the same hosted deployment. Redeploy Studio after changing its schemas or initial values, then reload the editor to use the updated code. Studio deployment and frontend deployment are separate; publishing content does not deploy Studio code.
 
-The static `og:image` in `index.html` points to the original logo at the production storefront URL so social crawlers can fetch it without JavaScript. Update this absolute URL if the production domain changes. The browser also updates that tag to the CMS logo and requests a small favicon from Sanity. The page includes Arabic metadata, dynamic Bakery JSON-LD and the exact dynamic copyright line.
+The initial HTML includes canonical and social sharing metadata, Bakery JSON-LD with the Instagram and Facebook pages, and an original logo image for crawlers that do not run JavaScript. The browser updates the metadata and structured data when Sanity settings load. `public/robots.txt` and `public/sitemap.xml` list the storefront URL. If the production domain changes, update these files and the absolute URLs in `index.html`.
+
+The production HTML starts the public menu request before React loads and preloads the first highlighted hero image when its asset is available. The storefront reuses that response, then continues to refresh from Sanity normally. IBM Plex Sans Arabic is served locally from the Arabic and Latin WOFF2 subsets; the small on-page logo and favicon use optimized copies while social sharing keeps the original logo.
 
 ## Project layout
 

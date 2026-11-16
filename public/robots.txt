@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://beebites.o-a-momani.workers.dev/sitemap.xml
