@@ -11,12 +11,13 @@ export function BrandLogo({
   large?: boolean
 }) {
   const { t } = useLanguage()
-  const source = imageUrl(logo, large ? 800 : 160) || '/logo.jpg'
+  const fallback = large ? '/logo.jpg' : '/logo-small.webp'
+  const source = imageUrl(logo, large ? 800 : 160) || fallback
   const [failedSource, setFailedSource] = useState<string>()
   const [failedLocal, setFailedLocal] = useState(false)
-  const effectiveSource = failedSource === source ? '/logo.jpg' : source
+  const effectiveSource = failedSource === source ? fallback : source
 
-  if (failedLocal && effectiveSource === '/logo.jpg') {
+  if (failedLocal && effectiveSource === fallback) {
     return (
       <span
         className={`brand-wordmark ${large ? 'brand-wordmark-large' : ''}`}
@@ -40,7 +41,7 @@ export function BrandLogo({
       loading={large ? 'eager' : 'lazy'}
       fetchPriority={large ? 'high' : 'auto'}
       onError={() => {
-        if (effectiveSource === '/logo.jpg') setFailedLocal(true)
+        if (effectiveSource === fallback) setFailedLocal(true)
         else setFailedSource(source)
       }}
     />

@@ -267,6 +267,7 @@
 /* Hero */
 .hero-section {
   position: relative;
+  min-height: min(604px, calc(35vw + 183px));
   padding-block: 64px 24px;
   overflow: hidden;
 }
@@ -468,10 +469,14 @@
 .category-nav {
   margin-bottom: 35px;
 }
+.category-nav[hidden] + .menu-content {
+  margin-top: 107px;
+}
 .category-nav-inner {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-height: 72px;
   padding-block: 13px;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
@@ -1817,6 +1822,9 @@
   }
 }
 @media (min-width: 768px) and (max-width: 1023px) {
+  .hero-section {
+    min-height: 781px;
+  }
   .hero-product-slide {
     grid-template-columns: minmax(0, 1fr);
     gap: 12px;
@@ -1869,6 +1877,9 @@
   }
 }
 @media (max-width: 767px) {
+  .hero-section {
+    min-height: min(calc(100vw + 112px), 568px);
+  }
   :root {
     --header-height: 72px;
   }
