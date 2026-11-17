@@ -68,7 +68,7 @@ const english = {
   'الطلب عبر واتساب متاح قريباً': 'WhatsApp ordering is coming soon',
   'إفراغ الصندوق': 'Clear box',
   'الحلو في التفاصيل': 'Sweetness is in the details',
-  'ليش بي بايتس؟': 'Why BeeBites?',
+  'ليش بيي بايتس؟': 'Why BeeBites?',
   'لأن الخلية الحلوة بتبدأ من القلب.': 'Because every sweet honeycomb starts with heart.',
   'هشّة زي الغيم': 'Soft as a cloud',
   'عجينة خفيفة وطرية، كل قطعة فيها لقمة بتذوب بالقلب.': 'Light, fluffy dough and a melt-in-your-mouth bite, every time.',
