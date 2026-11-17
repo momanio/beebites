@@ -17,7 +17,7 @@ export function About() {
       <div className="page-container">
         <Reveal className="section-heading">
           <p className="eyebrow">{t('الحلو في التفاصيل')}</p>
-          <h2 id="about-title">{t('ليش بي بايتس؟')}</h2>
+          <h2 id="about-title">{t('ليش بيي بايتس؟')}</h2>
           <p>{t('لأن الخلية الحلوة بتبدأ من القلب.')}</p>
         </Reveal>
         <div className="grid gap-5 md:grid-cols-3">

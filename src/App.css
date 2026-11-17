@@ -824,8 +824,9 @@
   min-height: 29px;
 }
 .product-subtitle {
-  color: var(--muted);
+  color: var(--chocolate);
   font-size: 12px;
+  font-weight: 700;
   line-height: 1.9;
   min-height: 22px;
   margin-bottom: 10px;
@@ -1145,8 +1146,9 @@
 }
 .product-preview-subtitle {
   margin-top: 0;
-  color: var(--muted);
+  color: var(--chocolate);
   font-size: 14px;
+  font-weight: 700;
   line-height: 1.9;
   overflow-wrap: anywhere;
 }
