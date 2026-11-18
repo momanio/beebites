@@ -744,6 +744,36 @@ try {
     assert.equal(await cartDialog.locator('.cart-dialog-footer').isVisible(), true)
     if ([320, 390, 430, 600].includes(width))
       await page.screenshot({ path: `test-results/cart-review-${width}.png` })
+    if (width === 390) {
+      const session = await context.newCDPSession(page)
+      async function swipeCartHeader(distance) {
+        const handle = await cartDialog.locator('.cart-dialog-handle').boundingBox()
+        const x = handle.x + handle.width / 2
+        const y = handle.y + handle.height / 2
+        await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] })
+        for (let step = 1; step <= 5; step++)
+          await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y + distance * step / 5 }] })
+        await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+      }
+      await swipeCartHeader(35)
+      assert.equal(await cartDialog.count(), 1, 'A short swipe keeps the cart open')
+      await page.waitForFunction(() => {
+        const sheet = document.querySelector('#cart-dialog')
+        return Math.abs(sheet.getBoundingClientRect().bottom - (window.innerHeight - 8)) < 2
+      })
+      await swipeCartHeader(120)
+      await cartDialog.waitFor({ state: 'hidden' })
+      await page.locator('.cart-summary').click()
+      const close = await cartDialog.locator('.cart-dialog-close').boundingBox()
+      const closeX = close.x + close.width / 2
+      const closeY = close.y + close.height / 2
+      await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: closeX, y: closeY }] })
+      await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+      await cartDialog.waitFor({ state: 'hidden' })
+      await page.locator('.cart-summary').click()
+      await cartDialog.waitFor()
+      await session.detach()
+    }
     if (width === 320) {
       await noteField.scrollIntoViewIfNeeded()
       const noteBounds = await noteField.boundingBox()
