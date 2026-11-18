@@ -17,8 +17,9 @@ import { useLanguage } from './hooks/useLanguage'
 import { localizeMenu, localizeSettings } from './lib/localization'
 import { useCart } from './hooks/useCart'
 import { useMenu } from './hooks/useMenu'
+import { useOrderNote } from './hooks/useOrderNote'
 import { useSiteSettings } from './hooks/useSiteSettings'
-import { rootCategories } from './lib/menu'
+import { ALL_CATEGORY_ID, rootCategories } from './lib/menu'
 import './App.css'
 
 function App() {
@@ -27,6 +28,17 @@ function App() {
   const { categories, products } = useMemo(
     () => localizeMenu({ categories: originalCategories, products: originalProducts }, language),
     [originalCategories, originalProducts, language],
+  )
+  const allCategory = useMemo(() => ({
+    _id: ALL_CATEGORY_ID,
+    title: language === 'ar' ? 'الكل' : 'All',
+    slug: 'all',
+    order: 0,
+    parentId: null,
+  }), [language])
+  const displayCategories = useMemo(
+    () => [allCategory, ...categories],
+    [allCategory, categories],
   )
   const originalSettings = useSiteSettings(retryKey)
   const settings = localizeSettings(originalSettings, language)
@@ -42,10 +54,12 @@ function App() {
     (category) => category._id === previewProduct?.categoryId,
   )
   const cart = useCart(products, loading || !ready)
+  const { orderNote, setOrderNote } = useOrderNote(cart.count, ready && !loading)
   const hasCart = ready && !loading && cart.count > 0
-  const mainCategories = ready ? rootCategories(categories) : []
-  const { activeCategoryId, selectCategory } = useActiveCategory(categories, ready && !loading)
-  const activeCategory = categories.find((category) => category._id === activeCategoryId)
+  const hasMenuContent = categories.length > 0 || products.length > 0
+  const mainCategories = ready && hasMenuContent ? [allCategory, ...rootCategories(categories)] : []
+  const { activeCategoryId, selectCategory } = useActiveCategory(displayCategories, ready && !loading)
+  const activeCategory = displayCategories.find((category) => category._id === activeCategoryId)
   const activeMainCategoryId = activeCategory?.parentId || activeCategory?._id || mainCategories[0]?._id
 
   function retryMenu() {
@@ -127,12 +141,12 @@ function App() {
             <div className="page-container menu-content" aria-busy={loading}>
               {loading ? (
                 <MenuSkeleton />
-              ) : !ready ? null : categories.length ? (
+              ) : !ready ? null : hasMenuContent ? (
                 mainCategories.map((category) => (
                   <MenuSection
                     key={category._id}
                     category={category}
-                    categories={categories}
+                    categories={displayCategories}
                     products={products}
                     activeCategoryId={activeCategoryId}
                     onCategorySelect={selectCategory}
@@ -162,6 +176,7 @@ function App() {
           category={previewCategory}
           quantity={cart.lines.find((line) => line.product._id === previewId)?.quantity ?? 0}
           lines={cart.lines}
+          orderNote={orderNote}
           settings={settings}
           orderingDisabled={loading || !ready}
           onQuantityChange={cart.changeQuantity}
@@ -183,6 +198,8 @@ function App() {
         {hasCart && (
           <CartBar
             lines={cart.lines}
+            orderNote={orderNote}
+            onOrderNoteChange={setOrderNote}
             count={cart.count}
             total={cart.total}
             settings={settings}

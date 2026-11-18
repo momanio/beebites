@@ -1,15 +1,37 @@
 import { useLanguage } from '../hooks/useLanguage'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
-import type { CartLine, SiteSettings } from '../types/menu'
-import { MAX_QUANTITY } from '../lib/cart'
+import type { CartLine, Product, SiteSettings } from '../types/menu'
+import { MAX_QUANTITY, ORDER_NOTE_MAX_LENGTH } from '../lib/cart'
 import { formatPrice } from '../lib/formatPrice'
+import { imageUrl } from '../lib/sanity'
 import { buildOrderMessage, whatsappUrl } from '../lib/whatsapp'
 import { Icon } from './Icon'
 import { WhatsAppLink } from './WhatsAppLink'
 
+function CartLinePhoto({ product }: { product: Product }) {
+  const [failedSource, setFailedSource] = useState<string>()
+  const source = imageUrl(product.image, 160)
+  return (
+    <img
+      className="cart-line-photo"
+      src={source && source !== failedSource ? source : '/product-placeholder.svg'}
+      alt=""
+      width="64"
+      height="64"
+      loading="lazy"
+      decoding="async"
+      onError={() => {
+        if (source) setFailedSource(source)
+      }}
+    />
+  )
+}
+
 interface CartBarProps {
   lines: CartLine[]
+  orderNote: string
+  onOrderNoteChange: (value: string) => void
   count: number
   total: number
   settings: SiteSettings
@@ -19,6 +41,8 @@ interface CartBarProps {
 
 export function CartBar({
   lines,
+  orderNote,
+  onOrderNoteChange,
   count,
   total,
   settings,
@@ -28,8 +52,13 @@ export function CartBar({
   const { t, language } = useLanguage()
   const dialog = useRef<HTMLDialogElement>(null)
   const reducedMotion = useReducedMotion()
-  const orderMessage = buildOrderMessage(lines, language)
+  const orderMessage = buildOrderMessage(lines, language, orderNote)
   const canOrder = Boolean(whatsappUrl(settings.whatsappNumber, orderMessage))
+  const itemCountLabel = language === 'ar' && lines.length === 1
+    ? 'صنف واحد في السلة'
+    : language === 'ar' && lines.length === 2
+      ? 'صنفان في السلة'
+      : t('{count} أصناف في السلة', { count: lines.length })
 
   return (
     <>
@@ -76,6 +105,7 @@ export function CartBar({
         className="cart-dialog"
         ref={dialog}
         aria-labelledby="cart-dialog-title"
+        aria-describedby="cart-dialog-count"
         onClick={(event) => {
           if (event.target !== event.currentTarget) return
           const bounds = event.currentTarget.getBoundingClientRect()
@@ -89,9 +119,10 @@ export function CartBar({
         }}
       >
         <div className="cart-dialog-header">
+          <span className="cart-dialog-handle" aria-hidden="true" />
           <div>
-            <p className="eyebrow">{t('كل قطعة على ذوقك')}</p>
-            <h2 id="cart-dialog-title">{t('صندوقك الحلو')}</h2>
+            <h2 id="cart-dialog-title">{t('مراجعة الطلب')}</h2>
+            <p id="cart-dialog-count">{itemCountLabel}</p>
           </div>
           <button
             type="button"
@@ -102,70 +133,95 @@ export function CartBar({
             <Icon name="close" />
           </button>
         </div>
-        <ul className="cart-line-list">
-          {lines.map(({ product, quantity, lineTotal }) => (
-            <li key={product._id}>
-              <div className="cart-line-info">
-                <h3>{product.name}</h3>
-                {product.subtitle && <p>{product.subtitle}</p>}
-                <bdi>{formatPrice(lineTotal)}</bdi>
-              </div>
-              <div
-                className="quantity-control"
-                role="group"
-                aria-label={t('كمية {name} في الصندوق', { name: product.name })}
-              >
-                <button
-                  type="button"
-                  disabled={quantity >= MAX_QUANTITY}
-                  aria-label={t('زيادة كمية {name} في الصندوق', { name: product.name })}
-                  onClick={() => onQuantityChange(product._id, 1)}
+        <div className="cart-dialog-body">
+          <ul className="cart-line-list">
+            {lines.map(({ product, quantity, lineTotal }) => (
+              <li key={product._id}>
+                <CartLinePhoto product={product} />
+                <div className="cart-line-info">
+                  <h3>{product.name}</h3>
+                  {product.subtitle && <p>{product.subtitle}</p>}
+                  <bdi>{formatPrice(lineTotal)}</bdi>
+                </div>
+                <div
+                  className="quantity-control"
+                  role="group"
+                  aria-label={t('كمية {name} في الصندوق', { name: product.name })}
                 >
-                  <Icon name="plus" size={16} />
-                </button>
-                <span>{quantity}</span>
-                <button
-                  type="button"
-                  aria-label={t('تقليل كمية {name} في الصندوق', { name: product.name })}
-                  onClick={() => {
-                    if (count === 1) dialog.current?.close()
-                    onQuantityChange(product._id, -1)
-                  }}
-                >
-                  <Icon name="minus" size={16} />
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-        <div className="cart-dialog-total">
-          <strong>{t('المجموع')}</strong>
-          <bdi>{formatPrice(total)}</bdi>
+                  <button
+                    type="button"
+                    disabled={quantity >= MAX_QUANTITY}
+                    aria-label={t('زيادة كمية {name} في الصندوق', { name: product.name })}
+                    onClick={() => onQuantityChange(product._id, 1)}
+                  >
+                    <Icon name="plus" size={16} />
+                  </button>
+                  <span>{quantity}</span>
+                  <button
+                    type="button"
+                    aria-label={t('تقليل كمية {name} في الصندوق', { name: product.name })}
+                    onClick={() => {
+                      if (count === 1) dialog.current?.close()
+                      onQuantityChange(product._id, -1)
+                    }}
+                  >
+                    <Icon name="minus" size={16} />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <aside className="cart-preorder">
+            <span className="cart-preorder-icon" aria-hidden="true"><Icon name="clock" size={21} /></span>
+            <div>
+              <strong>{t('طلب مسبق')}</strong>
+              <p>{t('الطلب قبل الموعد بيوم على الأقل.')}</p>
+            </div>
+          </aside>
+          <div className="cart-order-note">
+            <label htmlFor="cart-order-note">
+              {t('ملاحظات الطلب')} <span>{t('اختياري')}</span>
+            </label>
+            <textarea
+              id="cart-order-note"
+              value={orderNote}
+              onChange={(event) => onOrderNoteChange(event.target.value)}
+              placeholder={t('مثلاً، موعد الاستلام المفضّل')}
+              maxLength={ORDER_NOTE_MAX_LENGTH}
+              rows={3}
+            />
+          </div>
+          <button
+            type="button"
+            className="clear-cart"
+            onClick={() => {
+              dialog.current?.close()
+              onClear()
+            }}
+          >
+            {t('إفراغ الصندوق')}
+          </button>
         </div>
-        <p className="cart-note">
-          {t('بنأكد معك التوفر، موعد الاستلام وأي تفاصيل إضافية على واتساب.')}
-        </p>
-        {!canOrder && (
-          <p className="cart-note">{t('الطلب عبر واتساب متاح قريباً.')}</p>
-        )}
-        <WhatsAppLink
-          settings={settings}
-          message={orderMessage}
-          className="button button-chocolate cart-dialog-send"
-        >
-          <Icon name="whatsapp" size={20} />
-          {t('أرسل الطلب عبر واتساب')}
-        </WhatsAppLink>
-        <button
-          type="button"
-          className="clear-cart"
-          onClick={() => {
-            dialog.current?.close()
-            onClear()
-          }}
-        >
-          {t('إفراغ الصندوق')}
-        </button>
+        <div className="cart-dialog-footer">
+          <div className="cart-dialog-total">
+            <strong>{t('الإجمالي')}</strong>
+            <bdi>{formatPrice(total)}</bdi>
+          </div>
+          <WhatsAppLink
+            settings={settings}
+            message={orderMessage}
+            className="button cart-dialog-send"
+          >
+            <Icon name="whatsapp" size={20} />
+            <span>{t('أرسل الطلب عبر واتساب')}</span>
+            <Icon name="arrow" size={17} />
+          </WhatsAppLink>
+          <p className="cart-note">
+            {canOrder
+              ? t('بنأكد معك التوفر، موعد الاستلام وأي تفاصيل إضافية على واتساب.')
+              : t('الطلب عبر واتساب متاح قريباً.')}
+          </p>
+        </div>
       </dialog>
     </>
   )

@@ -3,6 +3,7 @@ import { roundMoney } from './formatPrice.ts'
 
 export const CART_STORAGE_KEY = 'beebites-cart-v1'
 export const MAX_QUANTITY = 99
+export const ORDER_NOTE_MAX_LENGTH = 500
 export type Quantities = Record<string, number>
 
 export function parseCart(value: string | null): Quantities {

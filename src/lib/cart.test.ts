@@ -105,6 +105,9 @@ test('WhatsApp message includes names, quantities and totals without product det
   assert.ok(url)
   assert.equal(new URL(url).pathname, '/962790000000')
   assert.equal(new URL(url).searchParams.get('text'), message)
+  const withNote = buildOrderMessage(lines, 'ar', '  الاستلام الساعة ٥ مساءً  ')
+  assert.ok(withNote.includes('ملاحظات الطلب:\nالاستلام الساعة ٥ مساءً'))
+  assert.ok(!message.includes('ملاحظات الطلب:'))
 })
 
 test('placeholder numbers and non-HTTPS social links never become live links', () => {
