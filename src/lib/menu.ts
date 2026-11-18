@@ -1,6 +1,8 @@
 import { menuCategories } from '../data/menuCategories.ts'
 import type { Category, MenuData, Product } from '../types/menu'
 
+export const ALL_CATEGORY_ID = 'category-all'
+
 function isNewArrivalsCategory(category: Category): boolean {
   return category._id === 'category-new' || category.slug === 'new'
 }
@@ -14,6 +16,7 @@ export function rootCategories(categories: Category[]): Category[] {
 
 export function productInCategory(product: Product, categoryId: string): boolean {
   return (
+    categoryId === ALL_CATEGORY_ID ||
     product.categoryId === categoryId ||
     product.additionalCategoryIds?.includes(categoryId) === true
   )

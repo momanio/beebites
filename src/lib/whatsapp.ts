@@ -9,8 +9,9 @@ export function whatsappUrl(number: string, message: string): string | null {
   return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`
 }
 
-export function buildOrderMessage(lines: CartLine[], language: Language = 'ar'): string {
+export function buildOrderMessage(lines: CartLine[], language: Language = 'ar', orderNote = ''): string {
   const total = roundMoney(lines.reduce((sum, line) => sum + line.lineTotal, 0))
+  const note = orderNote.trim()
   const quantityLabel = language === 'en' ? 'Quantity' : 'عدد'
   const priceLabel = language === 'en' ? 'Price' : 'السعر'
   const items = lines.map(
@@ -22,6 +23,7 @@ export function buildOrderMessage(lines: CartLine[], language: Language = 'ar'):
     ...items,
     '',
     `${language === 'en' ? 'Total' : 'المجموع'}: ${formatPrice(total)}`,
+    ...(note ? ['', `${language === 'en' ? 'Order notes' : 'ملاحظات الطلب'}:`, note] : []),
     '',
     language === 'en' ? 'Could you confirm availability and pickup time?' : 'ممكن تأكيد توفر الطلب وموعد الاستلام؟',
   ].join('\n')

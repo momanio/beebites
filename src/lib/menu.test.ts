@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { fallbackMenu } from '../data/fallbackMenu.ts'
-import { productInCategory, resolveMenu, rootCategories } from './menu.ts'
+import { ALL_CATEGORY_ID, productInCategory, resolveMenu, rootCategories } from './menu.ts'
 import {
   buildCategoryMigration,
   type MigrationDocument,
@@ -50,6 +50,22 @@ test('a product can appear in its primary and additional categories only once pe
   assert.equal(menu.products.filter((item) => productInCategory(item, 'category-new')).length, 1)
   assert.equal(menu.products.filter((item) => productInCategory(item, 'category-cells')).length, 1)
   assert.equal(productInCategory(menu.products[0], 'category-sweet'), false)
+  assert.equal(productInCategory(menu.products[0], ALL_CATEGORY_ID), true)
+})
+
+test('All includes each published product regardless of its category', () => {
+  const menu = resolveMenu({
+    categories: fallbackMenu.categories,
+    products: [
+      fallbackMenu.products[0],
+      fallbackMenu.products[10],
+      { ...fallbackMenu.products[0], _id: 'unavailable', available: false },
+    ],
+  })
+  assert.deepEqual(
+    menu.products.filter((product) => productInCategory(product, ALL_CATEGORY_ID)).map((product) => product._id),
+    [fallbackMenu.products[0]._id, fallbackMenu.products[10]._id],
+  )
 })
 
 test('a new coffee product belongs to New and the Coffee parent, but not its subcategory', () => {

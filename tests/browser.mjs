@@ -117,10 +117,17 @@ try {
     await page.getByRole('link', { name: 'بي بايتس على فيسبوك' }).first().getAttribute('href'),
     'https://web.facebook.com/profile.php?id=61591721979434',
   )
-  assert.equal(await page.locator('.product-card').count(), 13)
+  assert.equal(await page.locator('.product-card').count(), 26)
   assert.deepEqual(
     await page.locator('.category-nav .category-chip').allTextContents(),
-    ['جديدنا', 'الخلايا'],
+    ['الكل', 'جديدنا', 'الخلايا'],
+  )
+  assert.equal(await page.locator('#category-category-all .product-card').count(), menu.products.length)
+  assert.deepEqual(
+    await page.locator('#category-category-all .product-card').evaluateAll((cards) =>
+      cards.map((card) => card.id),
+    ),
+    menu.products.map((product) => `menu-product-${product._id}-category-category-all`),
   )
   assert.deepEqual(await page.locator('.subcategory-title').allTextContents(), [
     'خلايا حلوة',
@@ -433,7 +440,7 @@ try {
   )
   assert.equal(
     await page.locator('.product-coming-soon button:disabled').count(),
-    2,
+    4,
   )
   assert.equal(
     await page.locator('.announcement').innerText(),
@@ -452,11 +459,14 @@ try {
   })
   await page
     .getByRole('heading', { name: 'منتج جديد منشور', exact: true })
+    .first()
     .waitFor()
-  assert.equal(await page.locator('.product-card').count(), 14)
+  assert.equal(await page.locator('#category-category-all .product-card').count(), 14)
+  assert.equal(await page.locator('.product-card').count(), 28)
   menu.products.pop()
   await page
     .getByRole('heading', { name: 'منتج جديد منشور', exact: true })
+    .first()
     .waitFor({ state: 'detached' })
 
   // Categories published in Studio appear without a frontend deployment.
@@ -497,12 +507,12 @@ try {
   assert.ok((await page.locator('.category-nav').innerText()).includes('كيك'))
   assert.deepEqual(
     await page.locator('.category-nav .category-chip').allTextContents(),
-    ['جديدنا', 'الخلايا', 'كيك'],
+    ['الكل', 'جديدنا', 'الخلايا', 'كيك'],
     'New arrivals stays first in navigation regardless of its saved order',
   )
   assert.deepEqual(
     await page.locator('.menu-content > .category-section > .section-title-wrap h2').allTextContents(),
-    ['جديدنا', 'الخلايا', 'كيك'],
+    ['الكل', 'جديدنا', 'الخلايا', 'كيك'],
     'Category sections follow the same order as navigation',
   )
   newArrivals.order = previousNewArrivalsOrder
@@ -526,6 +536,7 @@ try {
   await cellsCard.waitFor()
   assert.equal(await newArrivalsCard.count(), 1)
   assert.equal(await cellsCard.count(), 1)
+  assert.equal(await page.locator('#category-category-all #menu-product-cross-listed-product-category-category-all').count(), 1)
   assert.equal(await page.locator('#menu-product-cross-listed-product').count(), 1)
   assert.equal(await page.locator('#menu-product-cross-listed-product-category-category-cells').count(), 1)
   await page.setViewportSize({ width: 1440, height: 1600 })
@@ -568,7 +579,7 @@ try {
     })
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
   await page.waitForFunction(() =>
-    document.querySelectorAll('.category-nav .category-chip').length === 16,
+    document.querySelectorAll('.category-nav .category-chip').length === 17,
   )
   assert.ok(
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
@@ -583,11 +594,12 @@ try {
   menu.categories.splice(-14)
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
   await page.waitForFunction(() =>
-    document.querySelectorAll('.category-nav .category-chip').length === 2,
+    document.querySelectorAll('.category-nav .category-chip').length === 3,
   )
 
   // Category highlights follow clicks, keyboard navigation and the visible section.
   const currentMainCategory = page.locator('.category-nav .category-chip[aria-current="location"]')
+  const allCategoryLink = page.locator('.category-nav a[href="#category-category-all"]')
   const newCategoryLink = page.locator('.category-nav a[href="#category-category-new"]')
   const cellsCategoryLink = page.locator('.category-nav a[href="#category-category-cells"]')
   const sweetCategoryLink = page.locator('.subcategory-nav a[href="#category-category-sweet"]')
@@ -647,11 +659,15 @@ try {
   await newCategoryLink.evaluate((element) => element.blur())
   assert.equal(await newCategoryLink.getAttribute('aria-current'), 'location', 'The highlight remains after focus leaves the button')
   assert.equal(await currentMainCategory.count(), 1)
+  await allCategoryLink.click()
+  await page.waitForFunction(() => document.querySelector('.category-nav a[href="#category-category-all"]')?.getAttribute('aria-current') === 'location')
+  assert.equal(await page.locator('#category-category-all .product-card').count(), menu.products.length)
 
   const first = page.locator('.product-card').first()
   await first
     .getByRole('button', { name: 'زيادة كمية خلية شوكليت مكس', exact: true })
     .click({ clickCount: 2 })
+  assert.equal(await page.locator('#menu-product-product-chocolate-mix .selected-count').innerText(), '2')
   await page
     .locator('.product-card')
     .nth(3)
@@ -702,16 +718,70 @@ try {
       .evaluate((element) => element === document.activeElement),
   )
 
+  // Order notes travel with every WhatsApp entry point and survive closing/reloading the cart.
+  await page.locator('.cart-summary').click()
+  const cartDialog = page.locator('#cart-dialog[open]')
+  const noteField = cartDialog.getByRole('textbox', { name: 'ملاحظات الطلب اختياري' })
+  const orderNote = 'الاستلام الساعة ٥ مساءً'
+  await noteField.fill(orderNote)
+  assert.equal(await page.evaluate(() => localStorage.getItem('beebites-order-note-v1')), orderNote)
+  assert.ok(new URL(await page.locator('.cart-send').getAttribute('href')).searchParams.get('text').includes(`ملاحظات الطلب:\n${orderNote}`))
+  assert.ok(new URL(await cartDialog.locator('.cart-dialog-send').getAttribute('href')).searchParams.get('text').includes(`ملاحظات الطلب:\n${orderNote}`))
+  await page.keyboard.press('Escape')
+  await page.reload()
+  await page.locator('.cart-bar').waitFor()
+  await page.locator('.cart-summary').click()
+  assert.equal(await noteField.inputValue(), orderNote)
+  await mkdir('test-results', { recursive: true })
+  for (const width of [320, 360, 375, 390, 414, 430, 600, 767]) {
+    const height = width === 320 ? 568 : 844
+    await page.setViewportSize({ width, height })
+    const bounds = await cartDialog.boundingBox()
+    assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= width, `Cart fits ${width}px width`)
+    assert.ok(bounds.y >= 0 && bounds.y + bounds.height <= height, `Cart fits ${height}px height`)
+    assert.equal(await cartDialog.evaluate((element) => element.scrollWidth <= element.clientWidth), true, `Cart has no horizontal overflow at ${width}px`)
+    assert.equal(await cartDialog.locator('.cart-dialog-body').evaluate((element) => element.scrollWidth <= element.clientWidth), true, `Cart contents fit at ${width}px`)
+    assert.equal(await cartDialog.locator('.cart-dialog-footer').isVisible(), true)
+    if ([320, 390, 430, 600].includes(width))
+      await page.screenshot({ path: `test-results/cart-review-${width}.png` })
+    if (width === 320) {
+      await noteField.scrollIntoViewIfNeeded()
+      const noteBounds = await noteField.boundingBox()
+      const bodyBounds = await cartDialog.locator('.cart-dialog-body').boundingBox()
+      assert.ok(noteBounds.y < bodyBounds.y + bodyBounds.height, 'Order notes remain reachable on a short phone')
+      await cartDialog.getByRole('button', { name: 'إفراغ الصندوق' }).scrollIntoViewIfNeeded()
+      await cartDialog.locator('.cart-dialog-body').evaluate((element) => { element.scrollTop = 0 })
+    }
+  }
+  for (const [width, height] of [[568, 320], [667, 375], [812, 375]]) {
+    await page.setViewportSize({ width, height })
+    const bounds = await cartDialog.boundingBox()
+    assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= width, `Landscape cart fits ${width}px width`)
+    assert.ok(bounds.y >= 0 && bounds.y + bounds.height <= height, `Landscape cart fits ${height}px height`)
+    assert.ok(await cartDialog.locator('.cart-dialog-body').evaluate((element) => element.clientHeight > 0), 'Cart contents remain scrollable in landscape')
+    assert.equal(await cartDialog.evaluate((element) => element.scrollWidth <= element.clientWidth), true)
+    if (width === 568)
+      await page.screenshot({ path: 'test-results/cart-review-landscape-568.png' })
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await page.keyboard.press('Escape')
+  await previewTrigger.click()
+  await preview.waitFor()
+  assert.ok(new URL(await preview.locator('.product-preview-send').getAttribute('href')).searchParams.get('text').includes(`ملاحظات الطلب:\n${orderNote}`))
+  await page.keyboard.press('Escape')
+  await preview.waitFor({ state: 'hidden' })
+
   // A CMS change updates current prices and removes unavailable products from persisted orders.
   menu.products[0].price = 6.5
   menu.products[3].available = false
   await page.reload()
   await page.locator('.cart-bar').waitFor()
-  assert.equal(await page.locator('.product-card').count(), 12)
+  assert.equal(await page.locator('.product-card').count(), 24)
   assert.ok((await page.locator('.cart-summary').innerText()).includes('13 JD'))
   await page.locator('.cart-summary').click()
   await page.getByRole('button', { name: 'إفراغ الصندوق', exact: true }).click()
   assert.equal(await page.locator('.cart-bar').count(), 0)
+  assert.equal(await page.evaluate(() => localStorage.getItem('beebites-order-note-v1')), null)
 
   await mkdir('test-results', { recursive: true })
   await page.evaluate(() => window.scrollTo(0, 0))
@@ -892,24 +962,24 @@ try {
   assert.equal(await heroDots.count(), 0)
   menu.products = [fallbackMenu.products[0]]
   await page.reload()
-  await page.locator('.product-card').waitFor()
+  await page.locator('.product-card').first().waitFor()
   assert.equal(await heroPhotos.count(), 1)
   assert.equal(await heroTitle.innerText(), menu.products[0].name)
   assert.equal(await page.locator('.hero-carousel-controls').count(), 0)
   assert.equal(await heroPhotos.getAttribute('src'), '/product-placeholder.svg')
 
   // A withdrawn cart item must not return merely because it is published again.
-  await page.locator('.product-card .quantity-label').click()
+  await page.locator('.product-card .quantity-label').first().click()
   await page.locator('.cart-bar').waitFor()
   await previewTrigger.click()
   await preview.waitFor()
   menu.products = []
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
-  await page.locator('.product-card').waitFor({ state: 'detached' })
+  await page.locator('.product-card').first().waitFor({ state: 'detached' })
   await preview.waitFor({ state: 'hidden' })
   menu.products = [fallbackMenu.products[0]]
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
-  await page.locator('.product-card').waitFor()
+  await page.locator('.product-card').first().waitFor()
   assert.equal(await page.locator('.cart-bar').count(), 0)
 
   // A failed initial CMS read keeps the saved cart and never offers sample stock.
@@ -939,7 +1009,7 @@ try {
   await page.locator('.menu-notice button').click()
   await page.locator('#menu-product-published-cart-product').waitFor()
   await page.locator('.cart-send[href^="https://wa.me/"]').waitFor()
-  assert.equal(await page.locator('.product-card').count(), 1)
+  assert.equal(await page.locator('.product-card').count(), 2)
   assert.ok((await page.locator('.cart-summary').innerText()).includes('11 JD'))
   assert.equal(await page.locator('.menu-notice').count(), 0)
   assert.equal(
@@ -961,7 +1031,9 @@ try {
   assert.equal(await page.locator('html').getAttribute('lang'), 'en')
   assert.equal(await page.locator('#about h2').innerText(), 'Why BeeBites?')
   assert.equal(await page.locator('#about h3').first().innerText(), 'Soft as a cloud')
-  assert.equal(await page.locator('.product-card h3').innerText(), 'English pastry from Studio')
+  assert.equal(await page.locator('.category-nav .category-chip').first().innerText(), 'All')
+  assert.equal(await page.locator('#category-category-all .section-banner-title').innerText(), 'All')
+  assert.equal(await page.locator('.product-card h3').first().innerText(), 'English pastry from Studio')
   assert.equal(await page.locator('.subcategory-title').first().innerText(), 'Sweet favourites')
   assert.equal(await page.locator('.order-note p').innerText(), 'Please order a day ahead.')
   assert.equal(await page.evaluate(() => localStorage.getItem('beebites-cart-v1')), savedCartBeforeLanguage)
@@ -970,6 +1042,12 @@ try {
   assert.ok(englishOrder.startsWith('My BeeBites order'))
   assert.ok(englishOrder.includes('• English pastry from Studio  Quantity 2\n  Price = 11 JD'))
   assert.ok(englishOrder.includes('Total: 11 JD'))
+  await page.locator('.cart-summary').click()
+  const englishNoteField = page.locator('#cart-dialog').getByRole('textbox', { name: 'Order notes Optional' })
+  assert.equal(await englishNoteField.getAttribute('placeholder'), 'For example, your preferred pickup time')
+  await englishNoteField.fill('Please pack separately')
+  assert.ok(new URL(await page.locator('.cart-dialog-send').getAttribute('href')).searchParams.get('text').includes('Order notes:\nPlease pack separately'))
+  await page.keyboard.press('Escape')
   assert.ok((await page.title()).includes('BeeBites |'))
   assert.equal(await page.locator('meta[property="og:locale"]').getAttribute('content'), 'en_JO')
   await previewTrigger.click()
@@ -979,10 +1057,17 @@ try {
   await preview.getByRole('button', { name: 'Increase quantity of English pastry from Studio in details', exact: true }).click()
   await preview.getByRole('button', { name: 'Decrease quantity of English pastry from Studio in details', exact: true }).click()
   await preview.getByRole('button', { name: 'Back to menu', exact: true }).click()
-  for (const width of [320, 360, 390, 768, 1280]) {
+  for (const width of [320, 360, 390, 430, 600, 767, 768, 1280]) {
     await page.setViewportSize({ width, height: 900 })
     await page.evaluate(() => window.scrollTo(0, 0))
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `English layout fits at ${width}px`)
+    await page.locator('.cart-summary').click()
+    const englishCartBounds = await page.locator('#cart-dialog[open]').boundingBox()
+    assert.ok(englishCartBounds.x >= 0 && englishCartBounds.x + englishCartBounds.width <= width, `English cart fits at ${width}px`)
+    assert.equal(await page.locator('#cart-dialog').evaluate((element) => element.scrollWidth <= element.clientWidth), true)
+    if ([320, 390, 600].includes(width))
+      await page.screenshot({ path: `test-results/cart-review-en-${width}.png` })
+    await page.keyboard.press('Escape')
     const brandBounds = await page.locator('.site-header .brand-link').boundingBox()
     const actionBounds = await page.locator('.header-order').locator('..').boundingBox()
     assert.ok(brandBounds.x + brandBounds.width <= actionBounds.x, `English header controls fit with a full box at ${width}px`)

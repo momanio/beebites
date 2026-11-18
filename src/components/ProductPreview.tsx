@@ -54,6 +54,7 @@ export function ProductPreview({
   category,
   quantity,
   lines,
+  orderNote,
   settings,
   orderingDisabled,
   onQuantityChange,
@@ -63,6 +64,7 @@ export function ProductPreview({
   category: Category | undefined
   quantity: number
   lines: CartLine[]
+  orderNote: string
   settings: SiteSettings
   orderingDisabled: boolean
   onQuantityChange: (id: string, change: number) => void
@@ -212,7 +214,7 @@ export function ProductPreview({
                   ) : quantity > 0 ? (
                     <WhatsAppLink
                       settings={settings}
-                      message={buildOrderMessage(lines, language)}
+                      message={buildOrderMessage(lines, language, orderNote)}
                       className="button button-chocolate product-preview-send"
                     >
                       <Icon name="whatsapp" size={18} />
