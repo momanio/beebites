@@ -1,5 +1,5 @@
 import { useLanguage } from '../hooks/useLanguage'
-import { useRef, useState } from 'react'
+import { useRef, useState, type PointerEvent } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import type { CartLine, Product, SiteSettings } from '../types/menu'
 import { MAX_QUANTITY, ORDER_NOTE_MAX_LENGTH } from '../lib/cart'
@@ -51,6 +51,7 @@ export function CartBar({
 }: CartBarProps) {
   const { t, language } = useLanguage()
   const dialog = useRef<HTMLDialogElement>(null)
+  const dismissDrag = useRef<{ pointerId: number; startY: number } | null>(null)
   const reducedMotion = useReducedMotion()
   const orderMessage = buildOrderMessage(lines, language, orderNote)
   const canOrder = Boolean(whatsappUrl(settings.whatsappNumber, orderMessage))
@@ -59,6 +60,33 @@ export function CartBar({
     : language === 'ar' && lines.length === 2
       ? 'صنفان في السلة'
       : t('{count} أصناف في السلة', { count: lines.length })
+
+  function resetDismissDrag() {
+    dismissDrag.current = null
+    dialog.current?.classList.remove('cart-dialog-dragging')
+    dialog.current?.style.removeProperty('--cart-drag-y')
+  }
+
+  function startDismissDrag(event: PointerEvent<HTMLDivElement>) {
+    if (window.innerWidth > 767 || !event.isPrimary || event.button !== 0) return
+    if ((event.target as Element).closest('button')) return
+    dismissDrag.current = { pointerId: event.pointerId, startY: event.clientY }
+    event.currentTarget.setPointerCapture(event.pointerId)
+    dialog.current?.classList.add('cart-dialog-dragging')
+  }
+
+  function moveDismissDrag(event: PointerEvent<HTMLDivElement>) {
+    if (dismissDrag.current?.pointerId !== event.pointerId) return
+    const distance = Math.max(0, event.clientY - dismissDrag.current.startY)
+    dialog.current?.style.setProperty('--cart-drag-y', `${distance}px`)
+  }
+
+  function endDismissDrag(event: PointerEvent<HTMLDivElement>) {
+    if (dismissDrag.current?.pointerId !== event.pointerId) return
+    const distance = event.clientY - dismissDrag.current.startY
+    if (distance >= 72) dialog.current?.close()
+    resetDismissDrag()
+  }
 
   return (
     <>
@@ -106,6 +134,7 @@ export function CartBar({
         ref={dialog}
         aria-labelledby="cart-dialog-title"
         aria-describedby="cart-dialog-count"
+        onClose={resetDismissDrag}
         onClick={(event) => {
           if (event.target !== event.currentTarget) return
           const bounds = event.currentTarget.getBoundingClientRect()
@@ -118,7 +147,13 @@ export function CartBar({
             dialog.current?.close()
         }}
       >
-        <div className="cart-dialog-header">
+        <div
+          className="cart-dialog-header"
+          onPointerDown={startDismissDrag}
+          onPointerMove={moveDismissDrag}
+          onPointerUp={endDismissDrag}
+          onPointerCancel={resetDismissDrag}
+        >
           <span className="cart-dialog-handle" aria-hidden="true" />
           <div>
             <h2 id="cart-dialog-title">{t('مراجعة الطلب')}</h2>
@@ -126,11 +161,11 @@ export function CartBar({
           </div>
           <button
             type="button"
-            className="icon-button"
+            className="cart-dialog-close"
             aria-label={t('إغلاق تفاصيل الطلب')}
             onClick={() => dialog.current?.close()}
           >
-            <Icon name="close" />
+            <Icon name="close" size={18} />
           </button>
         </div>
         <div className="cart-dialog-body">
