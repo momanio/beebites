@@ -174,7 +174,7 @@ To validate the Cloudflare deployment configuration locally without publishing, 
 
 **Vercel:** import this repository, choose Vite, keep the root directory at the repository root, set build command `npm run build` and output directory `dist`. The committed production configuration supplies the Sanity defaults; optional `VITE_SANITY_*` build variables override them.
 
-**Netlify:** use `npm run build` and publish directory `dist`, with the same production configuration and optional build variable overrides. `netlify.toml` provides these build defaults. No router rewrites are needed; sections use anchors.
+**Netlify:** use `npm run build` and publish directory `dist`, with the same production configuration and optional build variable overrides. `netlify.toml` provides these build defaults. The build emits `dist/menu/index.html` for the all-items page at `/menu/`.
 
 After deployment, register the storefront origin in Sanity CORS. Content changes only require publishing in Studio and reloading the page; no frontend deployment is needed.
 

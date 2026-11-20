@@ -6,6 +6,13 @@ import { ProductCard } from './ProductCard'
 import { Reveal } from './Reveal'
 import { SectionTitle } from './SectionTitle'
 
+type ProductGridProps = {
+  products: Product[]
+  quantities: Quantities
+  onQuantityChange: (id: string, change: number) => void
+  onPreview: (id: string, categoryId: string) => void
+}
+
 export function MenuSection({
   category,
   categories,
@@ -16,15 +23,11 @@ export function MenuSection({
   onQuantityChange,
   onPreview,
   subcategory = false,
-}: {
+}: ProductGridProps & {
   category: Category
   categories: Category[]
-  products: Product[]
   activeCategoryId: string | null
   onCategorySelect: (id: string) => void
-  quantities: Quantities
-  onQuantityChange: (id: string, change: number) => void
-  onPreview: (id: string, categoryId: string) => void
   subcategory?: boolean
 }) {
   const { t } = useLanguage()
@@ -61,19 +64,13 @@ export function MenuSection({
         </nav>
       )}
       {categoryProducts.length > 0 ? (
-        <div className="grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-3 md:gap-x-6 xl:grid-cols-5">
-          {categoryProducts.map((product, index) => (
-            <Reveal key={product._id} delay={(index % 5) * 0.04}>
-              <ProductCard
-                product={product}
-                displayCategoryId={category._id}
-                quantity={quantities[product._id] ?? 0}
-                onQuantityChange={onQuantityChange}
-                onPreview={onPreview}
-              />
-            </Reveal>
-          ))}
-        </div>
+        <ProductGrid
+          products={categoryProducts}
+          categoryId={category._id}
+          quantities={quantities}
+          onQuantityChange={onQuantityChange}
+          onPreview={onPreview}
+        />
       ) : children.length === 0 ? (
         <p className="empty-category">{t('مذاقات جديدة بالطريق… ترقّبوا جديدنا!')}</p>
       ) : null}
@@ -92,6 +89,30 @@ export function MenuSection({
         />
       ))}
     </section>
+  )
+}
+
+export function ProductGrid({
+  products,
+  categoryId,
+  quantities,
+  onQuantityChange,
+  onPreview,
+}: ProductGridProps & { categoryId: string }) {
+  return (
+    <div className="grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-3 md:gap-x-6 xl:grid-cols-5">
+      {products.map((product, index) => (
+        <Reveal key={product._id} delay={(index % 5) * 0.04}>
+          <ProductCard
+            product={product}
+            displayCategoryId={categoryId}
+            quantity={quantities[product._id] ?? 0}
+            onQuantityChange={onQuantityChange}
+            onPreview={onPreview}
+          />
+        </Reveal>
+      ))}
+    </div>
   )
 }
 

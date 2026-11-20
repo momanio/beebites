@@ -1,4 +1,5 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import { flushSync } from 'react-dom'
 import { MotionConfig } from 'motion/react'
 import { About } from './components/About'
 import { CartBar } from './components/CartBar'
@@ -7,7 +8,7 @@ import { Header } from './components/Header'
 import { Hero } from './components/Hero'
 import { HowToOrder } from './components/HowToOrder'
 import { Icon } from './components/Icon'
-import { MenuSection, MenuSkeleton } from './components/MenuSection'
+import { MenuSection, MenuSkeleton, ProductGrid } from './components/MenuSection'
 import { ProductPreview } from './components/ProductPreview'
 import { Seo } from './components/Seo'
 import { SocialSection } from './components/SocialSection'
@@ -22,27 +23,24 @@ import { useSiteSettings } from './hooks/useSiteSettings'
 import { ALL_CATEGORY_ID, rootCategories } from './lib/menu'
 import './App.css'
 
+const allItemsPath = '/menu/'
+
+function isAllItemsPath(pathname: string) {
+  return pathname === allItemsPath || `${pathname}/` === allItemsPath
+}
+
 function App() {
   const { language, t } = useLanguage()
+  const [allItemsPage, setAllItemsPage] = useState(() => isAllItemsPath(window.location.pathname))
   const { categories: originalCategories, products: originalProducts, loading, ready, error, retry, retryKey } = useMenu()
   const { categories, products } = useMemo(
     () => localizeMenu({ categories: originalCategories, products: originalProducts }, language),
     [originalCategories, originalProducts, language],
   )
-  const allCategory = useMemo(() => ({
-    _id: ALL_CATEGORY_ID,
-    title: language === 'ar' ? 'الكل' : 'All',
-    slug: 'all',
-    order: 0,
-    parentId: null,
-  }), [language])
-  const displayCategories = useMemo(
-    () => [allCategory, ...categories],
-    [allCategory, categories],
-  )
   const originalSettings = useSiteSettings(retryKey)
   const settings = localizeSettings(originalSettings, language)
   const menuTitle = useRef<HTMLHeadingElement>(null)
+  const allItemsLink = useRef<HTMLAnchorElement>(null)
   const [previewSelection, setPreviewSelection] = useState<{ productId: string; categoryId: string } | null>(null)
   const previewId = previewSelection?.productId
   const previewProduct = products.find(
@@ -57,10 +55,53 @@ function App() {
   const { orderNote, setOrderNote } = useOrderNote(cart.count, ready && !loading)
   const hasCart = ready && !loading && cart.count > 0
   const hasMenuContent = categories.length > 0 || products.length > 0
-  const mainCategories = ready && hasMenuContent ? [allCategory, ...rootCategories(categories)] : []
-  const { activeCategoryId, selectCategory } = useActiveCategory(displayCategories, ready && !loading)
-  const activeCategory = displayCategories.find((category) => category._id === activeCategoryId)
+  const mainCategories = ready ? rootCategories(categories) : []
+  const { activeCategoryId, selectCategory } = useActiveCategory(categories, !allItemsPage && ready && !loading)
+  const activeCategory = categories.find((category) => category._id === activeCategoryId)
   const activeMainCategoryId = activeCategory?.parentId || activeCategory?._id || mainCategories[0]?._id
+  const MenuHeading = allItemsPage ? 'h1' : 'h2'
+  const allItemsTitle = t('كل المنتجات')
+
+  useEffect(() => {
+    function restorePage() {
+      const nextPage = isAllItemsPath(window.location.pathname)
+      if (nextPage === allItemsPage) return
+      // Render the destination before the browser restores its scroll position.
+      flushSync(() => {
+        setAllItemsPage(nextPage)
+        setPreviewSelection(null)
+      })
+      if (nextPage) menuTitle.current?.focus({ preventScroll: true })
+      else allItemsLink.current?.focus({ preventScroll: true })
+    }
+
+    window.addEventListener('popstate', restorePage)
+    return () => window.removeEventListener('popstate', restorePage)
+  }, [allItemsPage])
+
+  function navigateMenuPage(event: MouseEvent<HTMLAnchorElement>) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+      return
+
+    event.preventDefault()
+    const destination = new URL(event.currentTarget.href)
+    window.history.pushState(null, '', destination)
+    flushSync(() => setAllItemsPage(isAllItemsPath(destination.pathname)))
+
+    const section = document.getElementById(destination.hash.slice(1))
+    if (section) section.scrollIntoView({ behavior: 'instant' })
+    else window.scrollTo({ top: 0, behavior: 'instant' })
+    if (!section || section.id === 'menu') {
+      menuTitle.current?.focus({ preventScroll: true })
+    } else {
+      section.tabIndex = -1
+      section.focus({ preventScroll: true })
+    }
+  }
+
+  function previewMenuProduct(productId: string, categoryId: string) {
+    setPreviewSelection({ productId, categoryId })
+  }
 
   function retryMenu() {
     menuTitle.current?.focus({ preventScroll: true })
@@ -70,11 +111,15 @@ function App() {
   return (
     <MotionConfig reducedMotion="user">
       <div className={`site-shell ${hasCart ? 'has-cart' : ''}`}>
-        <Seo settings={settings} />
+        <Seo settings={settings} pageTitle={allItemsPage ? allItemsTitle : undefined} />
         <a className="skip-link" href="#main">
           {t('انتقل إلى المحتوى')}
         </a>
-        <Header settings={settings} count={loading || !ready ? 0 : cart.count} />
+        <Header
+          settings={settings}
+          count={loading || !ready ? 0 : cart.count}
+          onHomeNavigate={allItemsPage ? navigateMenuPage : undefined}
+        />
         {settings.announcement.enabled && settings.announcement.text && (
           <aside className="announcement" aria-label={t('إعلان بي بايتس')}>
             <Icon name="sparkles" size={17} />
@@ -83,19 +128,24 @@ function App() {
           </aside>
         )}
         <main id="main">
-          <Hero products={ready ? products : []} />
+          {!allItemsPage && <Hero products={ready ? products : []} />}
           <section
             id="menu"
             className="menu-section section-space"
             aria-labelledby="menu-title"
           >
-            <div className="page-container menu-intro">
+            <div className={`page-container menu-intro${allItemsPage ? ' all-items-intro' : ''}`}>
               <div>
-                <p className="eyebrow">{t('اختار حلا جمعتك')}</p>
-                <h2 id="menu-title" ref={menuTitle} tabIndex={-1}>
-                  {t('قائمة بيي بايتس')}
-                </h2>
+                {!allItemsPage && <p className="eyebrow">{t('اختار حلا جمعتك')}</p>}
+                <MenuHeading id="menu-title" ref={menuTitle} tabIndex={-1}>
+                  {allItemsPage ? allItemsTitle : t('قائمة بيي بايتس')}
+                </MenuHeading>
               </div>
+              {allItemsPage && (
+                <a className="button button-outline" href="/#menu" onClick={navigateMenuPage}>
+                  {t('الرجوع للأقسام')}
+                </a>
+              )}
             </div>
             {error && (
               <div className="page-container">
@@ -115,44 +165,56 @@ function App() {
                 </div>
               </div>
             )}
-            <nav
-              className="category-nav"
-              aria-label={t('أقسام القائمة')}
-              hidden={!ready}
-            >
-              <div className="page-container category-nav-inner">
-                {mainCategories.map((category) => (
-                  <a
-                    key={category._id}
-                    href={`#category-${category._id}`}
-                    className="category-chip"
-                    aria-current={category._id === activeMainCategoryId ? 'location' : undefined}
-                    onClick={() => selectCategory(category._id)}
-                  >
-                    <Icon name="hexagon" size={16} />
-                    {category.title}
-                  </a>
-                ))}
-                <span className="category-nav-end ms-auto">
-                  {t('لقمة صغيرة، سعادة كبيرة')} <Icon name="heart" size={14} />
-                </span>
-              </div>
-            </nav>
+            {!allItemsPage && (
+              <nav className="category-nav" aria-label={t('أقسام القائمة')} hidden={!ready}>
+                <div className="page-container category-nav-inner">
+                  {mainCategories.map((category) => (
+                    <a
+                      key={category._id}
+                      href={`#category-${category._id}`}
+                      className="category-chip"
+                      aria-current={category._id === activeMainCategoryId ? 'location' : undefined}
+                      onClick={() => selectCategory(category._id)}
+                    >
+                      <Icon name="hexagon" size={16} />
+                      {category.title}
+                    </a>
+                  ))}
+                  {hasMenuContent && (
+                    <a ref={allItemsLink} className="category-chip" href={allItemsPath} onClick={navigateMenuPage}>
+                      <Icon name="hexagon" size={16} />
+                      {t('الكل')}
+                    </a>
+                  )}
+                  <span className="category-nav-end ms-auto">
+                    {t('لقمة صغيرة، سعادة كبيرة')} <Icon name="heart" size={14} />
+                  </span>
+                </div>
+              </nav>
+            )}
             <div className="page-container menu-content" aria-busy={loading}>
               {loading ? (
                 <MenuSkeleton />
-              ) : !ready ? null : hasMenuContent ? (
+              ) : !ready ? null : allItemsPage && products.length > 0 ? (
+                <ProductGrid
+                  products={products}
+                  categoryId={ALL_CATEGORY_ID}
+                  quantities={cart.quantities}
+                  onQuantityChange={cart.changeQuantity}
+                  onPreview={previewMenuProduct}
+                />
+              ) : !allItemsPage && hasMenuContent ? (
                 mainCategories.map((category) => (
                   <MenuSection
                     key={category._id}
                     category={category}
-                    categories={displayCategories}
+                    categories={categories}
                     products={products}
                     activeCategoryId={activeCategoryId}
                     onCategorySelect={selectCategory}
                     quantities={cart.quantities}
                     onQuantityChange={cart.changeQuantity}
-                    onPreview={(productId, categoryId) => setPreviewSelection({ productId, categoryId })}
+                    onPreview={previewMenuProduct}
                   />
                 ))
               ) : (
@@ -161,16 +223,22 @@ function App() {
                 </p>
               )}
             </div>
-            <p className="menu-ending page-container">
-              <Icon name="heart" size={16} />
-              {t('كل خلية إلها حكاية… أي حكاية بتختار؟')}
-            </p>
+            {!allItemsPage && (
+              <p className="menu-ending page-container">
+                <Icon name="heart" size={16} />
+                {t('كل خلية إلها حكاية… أي حكاية بتختار؟')}
+              </p>
+            )}
           </section>
-          <About />
-          <HowToOrder note={settings.orderNote} />
-          <SocialSection settings={settings} />
+          {!allItemsPage && (
+            <>
+              <About />
+              <HowToOrder note={settings.orderNote} />
+              <SocialSection settings={settings} />
+            </>
+          )}
         </main>
-        <Footer settings={settings} />
+        <Footer settings={settings} backToTopHref={allItemsPage ? '#main' : '#home'} />
         <ProductPreview
           product={previewProduct}
           category={previewCategory}

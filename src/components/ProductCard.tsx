@@ -3,6 +3,7 @@ import { useState } from 'react'
 import type { Product } from '../types/menu'
 import { imageUrl } from '../lib/sanity'
 import { MAX_QUANTITY } from '../lib/cart'
+import { ALL_CATEGORY_ID } from '../lib/menu'
 import { Icon } from './Icon'
 import { PriceTag } from './PriceTag'
 
@@ -29,6 +30,7 @@ export function ProductCard({
     ? `menu-product-${product._id}`
     : `menu-product-${product._id}-category-${displayCategoryId}`
   const titleId = `${cardId}-title`
+  const Title = displayCategoryId === ALL_CATEGORY_ID ? 'h2' : 'h3'
   return (
     <article
       id={cardId}
@@ -79,7 +81,7 @@ export function ProductCard({
         </span>
       </button>
       <div className="product-copy">
-        <h3 id={titleId} dir="auto">
+        <Title className="product-title" id={titleId} dir="auto">
           <button
             type="button"
             className="product-title-button"
@@ -88,7 +90,7 @@ export function ProductCard({
           >
             {product.name}
           </button>
-        </h3>
+        </Title>
         {product.description && (
           <p className="product-description">{product.description}</p>
         )}

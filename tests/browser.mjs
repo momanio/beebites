@@ -117,18 +117,29 @@ try {
     await page.getByRole('link', { name: 'بي بايتس على فيسبوك' }).first().getAttribute('href'),
     'https://web.facebook.com/profile.php?id=61591721979434',
   )
-  assert.equal(await page.locator('.product-card').count(), 26)
+  assert.equal(await page.locator('.product-card').count(), 13)
   assert.deepEqual(
     await page.locator('.category-nav .category-chip').allTextContents(),
-    ['الكل', 'جديدنا', 'الخلايا'],
+    ['جديدنا', 'الخلايا', 'الكل'],
   )
-  assert.equal(await page.locator('#category-category-all .product-card').count(), menu.products.length)
+  const allCategoryLink = page.locator('.category-nav a[href="/menu/"]')
+  const allItemsHeading = page.getByRole('heading', { name: 'كل المنتجات', level: 1 })
+  await allCategoryLink.press('Enter')
+  await page.waitForURL(`${origin}/menu/`)
+  await allItemsHeading.waitFor()
+  assert.equal(await allItemsHeading.evaluate((element) => element === document.activeElement), true)
+  assert.equal(await page.locator('.category-nav, #home').count(), 0)
   assert.deepEqual(
-    await page.locator('#category-category-all .product-card').evaluateAll((cards) =>
+    await page.locator('.product-card').evaluateAll((cards) =>
       cards.map((card) => card.id),
     ),
     menu.products.map((product) => `menu-product-${product._id}-category-category-all`),
   )
+  await mkdir('test-results', { recursive: true })
+  await page.screenshot({ path: 'test-results/all-items-desktop.png' })
+  await page.goBack()
+  await allCategoryLink.waitFor()
+  assert.equal(await allCategoryLink.evaluate((element) => element === document.activeElement), true)
   assert.deepEqual(await page.locator('.subcategory-title').allTextContents(), [
     'خلايا حلوة',
     'خلايا مالحه',
@@ -440,7 +451,7 @@ try {
   )
   assert.equal(
     await page.locator('.product-coming-soon button:disabled').count(),
-    4,
+    2,
   )
   assert.equal(
     await page.locator('.announcement').innerText(),
@@ -461,8 +472,7 @@ try {
     .getByRole('heading', { name: 'منتج جديد منشور', exact: true })
     .first()
     .waitFor()
-  assert.equal(await page.locator('#category-category-all .product-card').count(), 14)
-  assert.equal(await page.locator('.product-card').count(), 28)
+  assert.equal(await page.locator('.product-card').count(), 14)
   menu.products.pop()
   await page
     .getByRole('heading', { name: 'منتج جديد منشور', exact: true })
@@ -507,13 +517,13 @@ try {
   assert.ok((await page.locator('.category-nav').innerText()).includes('كيك'))
   assert.deepEqual(
     await page.locator('.category-nav .category-chip').allTextContents(),
-    ['الكل', 'جديدنا', 'الخلايا', 'كيك'],
+    ['جديدنا', 'الخلايا', 'كيك', 'الكل'],
     'New arrivals stays first in navigation regardless of its saved order',
   )
   assert.deepEqual(
     await page.locator('.menu-content > .category-section > .section-title-wrap h2').allTextContents(),
-    ['الكل', 'جديدنا', 'الخلايا', 'كيك'],
-    'Category sections follow the same order as navigation',
+    ['جديدنا', 'الخلايا', 'كيك'],
+    'Home page sections follow the order of the regular category links',
   )
   newArrivals.order = previousNewArrivalsOrder
   menu.categories.splice(-2)
@@ -536,7 +546,12 @@ try {
   await cellsCard.waitFor()
   assert.equal(await newArrivalsCard.count(), 1)
   assert.equal(await cellsCard.count(), 1)
-  assert.equal(await page.locator('#category-category-all #menu-product-cross-listed-product-category-category-all').count(), 1)
+  await allCategoryLink.click()
+  await allItemsHeading.waitFor()
+  assert.equal(await page.locator('#menu-product-cross-listed-product-category-category-all').count(), 1)
+  assert.equal(await page.locator('.product-card').count(), menu.products.length)
+  await page.getByRole('link', { name: 'الرجوع للأقسام', exact: true }).click()
+  await page.waitForURL(`${origin}/#menu`)
   assert.equal(await page.locator('#menu-product-cross-listed-product').count(), 1)
   assert.equal(await page.locator('#menu-product-cross-listed-product-category-category-cells').count(), 1)
   await page.setViewportSize({ width: 1440, height: 1600 })
@@ -599,7 +614,6 @@ try {
 
   // Category highlights follow clicks, keyboard navigation and the visible section.
   const currentMainCategory = page.locator('.category-nav .category-chip[aria-current="location"]')
-  const allCategoryLink = page.locator('.category-nav a[href="#category-category-all"]')
   const newCategoryLink = page.locator('.category-nav a[href="#category-category-new"]')
   const cellsCategoryLink = page.locator('.category-nav a[href="#category-category-cells"]')
   const sweetCategoryLink = page.locator('.subcategory-nav a[href="#category-category-sweet"]')
@@ -659,10 +673,6 @@ try {
   await newCategoryLink.evaluate((element) => element.blur())
   assert.equal(await newCategoryLink.getAttribute('aria-current'), 'location', 'The highlight remains after focus leaves the button')
   assert.equal(await currentMainCategory.count(), 1)
-  await allCategoryLink.click()
-  await page.waitForFunction(() => document.querySelector('.category-nav a[href="#category-category-all"]')?.getAttribute('aria-current') === 'location')
-  assert.equal(await page.locator('#category-category-all .product-card').count(), menu.products.length)
-
   const first = page.locator('.product-card').first()
   await first
     .getByRole('button', { name: 'زيادة كمية خلية شوكليت مكس', exact: true })
@@ -806,7 +816,7 @@ try {
   menu.products[3].available = false
   await page.reload()
   await page.locator('.cart-bar').waitFor()
-  assert.equal(await page.locator('.product-card').count(), 24)
+  assert.equal(await page.locator('.product-card').count(), 12)
   assert.ok((await page.locator('.cart-summary').innerText()).includes('13 JD'))
   await page.locator('.cart-summary').click()
   await page.getByRole('button', { name: 'إفراغ الصندوق', exact: true }).click()
@@ -1039,7 +1049,7 @@ try {
   await page.locator('.menu-notice button').click()
   await page.locator('#menu-product-published-cart-product').waitFor()
   await page.locator('.cart-send[href^="https://wa.me/"]').waitFor()
-  assert.equal(await page.locator('.product-card').count(), 2)
+  assert.equal(await page.locator('.product-card').count(), 1)
   assert.ok((await page.locator('.cart-summary').innerText()).includes('11 JD'))
   assert.equal(await page.locator('.menu-notice').count(), 0)
   assert.equal(
@@ -1061,8 +1071,16 @@ try {
   assert.equal(await page.locator('html').getAttribute('lang'), 'en')
   assert.equal(await page.locator('#about h2').innerText(), 'Why BeeBites?')
   assert.equal(await page.locator('#about h3').first().innerText(), 'Soft as a cloud')
-  assert.equal(await page.locator('.category-nav .category-chip').first().innerText(), 'All')
-  assert.equal(await page.locator('#category-category-all .section-banner-title').innerText(), 'All')
+  assert.equal(await page.locator('.category-nav .category-chip').last().innerText(), 'All')
+  await allCategoryLink.click()
+  await page.getByRole('heading', { name: 'All items', level: 1 }).waitFor()
+  assert.ok((await page.locator('.cart-summary').innerText()).includes('2 items'))
+  await page.reload()
+  await page.getByRole('heading', { name: 'All items', level: 1 }).waitFor()
+  await page.getByRole('heading', { name: 'English pastry from Studio', level: 2 }).waitFor()
+  assert.equal(await page.title(), 'All items | BeeBites')
+  await page.getByRole('link', { name: 'Back to categories', exact: true }).click()
+  await page.getByRole('heading', { name: 'BeeBites menu', exact: true }).waitFor()
   assert.equal(await page.locator('.product-card h3').first().innerText(), 'English pastry from Studio')
   assert.equal(await page.locator('.subcategory-title').first().innerText(), 'Sweet favourites')
   assert.equal(await page.locator('.order-note p').innerText(), 'Please order a day ahead.')
@@ -1193,6 +1211,12 @@ try {
   await privatePage.locator('.product-preview-send[href^="https://wa.me/"]').waitFor()
   await privatePage.getByRole('button', { name: 'رجوع للقائمة', exact: true }).tap()
   await privatePage.locator('.cart-bar').waitFor()
+  await privatePage.locator('.category-nav .category-chip').last().tap()
+  await privatePage.getByRole('heading', { name: 'كل المنتجات', level: 1 }).waitFor()
+  assert.equal(await privatePage.locator('.product-card').count(), touchMenu.products.length)
+  assert.equal(await privatePage.locator('.product-card .selected-count').first().innerText(), '1')
+  assert.equal(await privatePage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
+  await privatePage.screenshot({ path: 'test-results/all-items-mobile.png' })
   await blockedStorage.close()
   assert.deepEqual(errors, [])
   console.log(

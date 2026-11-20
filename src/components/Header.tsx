@@ -1,5 +1,5 @@
 import { useLanguage } from '../hooks/useLanguage'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type MouseEventHandler } from 'react'
 import type { SiteSettings } from '../types/menu'
 import { BrandLogo } from './BrandLogo'
 import { Icon } from './Icon'
@@ -15,14 +15,17 @@ const links = [
 export function Header({
   settings,
   count,
+  onHomeNavigate,
 }: {
   settings: SiteSettings
   count: number
+  onHomeNavigate?: MouseEventHandler<HTMLAnchorElement>
 }) {
   const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const toggle = useRef<HTMLButtonElement>(null)
   const header = useRef<HTMLElement>(null)
+  const homePath = onHomeNavigate ? '/' : ''
 
   useEffect(() => {
     if (!open) return
@@ -63,10 +66,13 @@ export function Header({
     >
       <div className="page-container header-inner">
         <a
-          href="#home"
+          href={`${homePath}#home`}
           className="brand-link"
           aria-label={t('بي بايتس — الصفحة الرئيسية')}
-          onClick={() => setOpen(false)}
+          onClick={(event) => {
+            setOpen(false)
+            onHomeNavigate?.(event)
+          }}
         >
           <BrandLogo logo={settings.logo} />
           <span className="mobile-brand-name" lang="en" dir="ltr" aria-hidden="true">
@@ -75,7 +81,7 @@ export function Header({
         </a>
         <nav className="desktop-nav" aria-label={t('القائمة الرئيسية')}>
           {links.map((link) => (
-            <a key={link.href} href={link.href}>
+            <a key={link.href} href={`${homePath}${link.href}`} onClick={onHomeNavigate}>
               {t(link.label)}
             </a>
           ))}
@@ -124,7 +130,14 @@ export function Header({
         hidden={!open}
       >
         {links.map((link) => (
-          <a key={link.href} href={link.href} onClick={() => setOpen(false)}>
+          <a
+            key={link.href}
+            href={`${homePath}${link.href}`}
+            onClick={(event) => {
+              setOpen(false)
+              onHomeNavigate?.(event)
+            }}
+          >
             {t(link.label)}
             <Icon name="arrow" size={18} />
           </a>

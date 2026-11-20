@@ -67,6 +67,18 @@ export default defineConfig(({ mode }) => {
           return html.replace('<!-- early menu request -->', `${preconnect}<script>${script}</script>`)
         },
       },
+      {
+        name: 'all-items-page',
+        apply: 'build',
+        generateBundle: {
+          order: 'post',
+          handler(_options, bundle) {
+            const page = bundle['index.html']
+            if (page?.type !== 'asset') this.error('Missing storefront HTML')
+            this.emitFile({ type: 'asset', fileName: 'menu/index.html', source: page.source })
+          },
+        },
+      },
       react(),
       tailwindcss(),
     ],
