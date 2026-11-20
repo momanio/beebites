@@ -3,13 +3,13 @@ import type { SiteSettings } from '../types/menu'
 import { BrandLogo } from './BrandLogo'
 import { SocialLinks } from './SocialLinks'
 
-export function Footer({ settings }: { settings: SiteSettings }) {
+export function Footer({ settings, backToTopHref }: { settings: SiteSettings; backToTopHref: string }) {
   const { t } = useLanguage()
   return (
     <footer className="site-footer">
       <div className="page-container footer-top">
         <a
-          href="#home"
+          href={backToTopHref}
           className="brand-link"
           aria-label={t('بي بايتس — العودة للأعلى')}
         >

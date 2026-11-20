@@ -4,12 +4,12 @@ import type { SiteSettings } from '../types/menu'
 import { imageUrl } from '../lib/sanity'
 import { safeSocialUrl, whatsappUrl } from '../lib/whatsapp'
 
-export function Seo({ settings }: { settings: SiteSettings }) {
+export function Seo({ settings, pageTitle }: { settings: SiteSettings; pageTitle?: string }) {
   const { language, t } = useLanguage()
   const { heroSlogan, heroSubline, instagramUrl, facebookUrl, whatsappNumber } = settings
   const logo = imageUrl(settings.logo, 800) || '/logo.jpg'
   const favicon = imageUrl(settings.logo, 64) || '/favicon.png'
-  const title = t('بي بايتس | طراوة لا تقاوم، طعم لا ينسى')
+  const title = pageTitle ? `${pageTitle} | BeeBites` : t('بي بايتس | طراوة لا تقاوم، طعم لا ينسى')
   const description = t('خلية نحل ومخبوزات منزلية في الأردن. اختار حلا جمعتك، ونخبزها طازجة إلك.')
   const imageAlt = t('شعار BeeBites — بي بايتس')
   useEffect(() => {
